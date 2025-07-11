@@ -1,7 +1,14 @@
 using MeetingSummarizer.API.Services;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add configuration from appsettings.json
+builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
+// Read logDebug from configuration
+bool logDebug = builder.Configuration.GetValue<bool>("logDebug");
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -9,8 +16,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Configure logging
+builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
-builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.SetMinimumLevel(logDebug ? LogLevel.Debug : LogLevel.Warning);
 
 // Add CORS
 builder.Services.AddCors(options =>

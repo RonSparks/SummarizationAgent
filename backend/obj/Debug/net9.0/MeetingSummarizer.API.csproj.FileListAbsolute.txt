@@ -33,3 +33,4 @@ D:\SourceCode\SummarizationAgent\backend\obj\Debug\net9.0\MeetingSummarizer.API.
 D:\SourceCode\SummarizationAgent\backend\obj\Debug\net9.0\ref\MeetingSummarizer.API.dll
 D:\SourceCode\SummarizationAgent\backend\bin\Debug\net9.0\MeetingSummarizer.API.staticwebassets.runtime.json
 D:\SourceCode\SummarizationAgent\backend\obj\Debug\net9.0\compressed\c2qyum9e0c-p1m2r7pppg.gz
+D:\SourceCode\SummarizationAgent\backend\obj\Debug\net9.0\compressed\c2qyum9e0c-v506owlc35.gz

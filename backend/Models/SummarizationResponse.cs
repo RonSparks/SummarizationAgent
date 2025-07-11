@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace MeetingSummarizer.API.Models;
@@ -42,6 +43,7 @@ public class Decision
     public string MadeBy { get; set; } = string.Empty;
 }
 
+[JsonConverter(typeof(KeyPointConverter))]
 public class KeyPoint
 {
     [JsonPropertyName("point")]
@@ -52,6 +54,50 @@ public class KeyPoint
     public string? Description { get; set; }
     [JsonPropertyName("madeBy")]
     public string? MadeBy { get; set; }
+}
+
+public class KeyPointConverter : JsonConverter<KeyPoint>
+{
+    public override KeyPoint Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            // Handle string values (when keyPoints is an array of strings)
+            var stringValue = reader.GetString();
+            return new KeyPoint { Point = stringValue ?? "", Category = "General" };
+        }
+        else if (reader.TokenType == JsonTokenType.StartObject)
+        {
+            // Handle object values (normal case)
+            var jsonElement = JsonElement.ParseValue(ref reader);
+            var point = jsonElement.TryGetProperty("point", out var pointElement) ? pointElement.GetString() ?? "" : "";
+            var category = jsonElement.TryGetProperty("category", out var categoryElement) ? categoryElement.GetString() ?? "" : "";
+            var description = jsonElement.TryGetProperty("description", out var descElement) ? descElement.GetString() : null;
+            var madeBy = jsonElement.TryGetProperty("madeBy", out var madeByElement) ? madeByElement.GetString() : null;
+            
+            return new KeyPoint 
+            { 
+                Point = point, 
+                Category = category, 
+                Description = description, 
+                MadeBy = madeBy 
+            };
+        }
+        
+        throw new JsonException($"Unexpected token type: {reader.TokenType}");
+    }
+
+    public override void Write(Utf8JsonWriter writer, KeyPoint value, JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        writer.WriteString("point", value.Point);
+        writer.WriteString("category", value.Category);
+        if (value.Description != null)
+            writer.WriteString("description", value.Description);
+        if (value.MadeBy != null)
+            writer.WriteString("madeBy", value.MadeBy);
+        writer.WriteEndObject();
+    }
 }
 
 public class SpeakerSentiment

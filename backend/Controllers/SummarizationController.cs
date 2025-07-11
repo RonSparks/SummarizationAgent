@@ -8,12 +8,12 @@ namespace MeetingSummarizer.API.Controllers;
 [Route("api/[controller]")]
 public class SummarizationController : ControllerBase
 {
-    private readonly IOllamaService _ollamaService;
+    private readonly ISummarizationService _summarizationService;
     private readonly ILogger<SummarizationController> _logger;
 
-    public SummarizationController(IOllamaService ollamaService, ILogger<SummarizationController> logger)
+    public SummarizationController(ISummarizationService summarizationService, ILogger<SummarizationController> logger)
     {
-        _ollamaService = ollamaService;
+        _summarizationService = summarizationService;
         _logger = logger;
     }
 
@@ -23,7 +23,7 @@ public class SummarizationController : ControllerBase
         _logger.LogInformation("GetAvailableModels endpoint called");
         try
         {
-            var models = await _ollamaService.GetAvailableModelsAsync();
+            var models = await _summarizationService.GetAvailableModelsAsync();
             _logger.LogInformation($"Returning {models.Count} models: {string.Join(", ", models)}");
             return Ok(models);
         }
@@ -49,7 +49,7 @@ public class SummarizationController : ControllerBase
                 return BadRequest("Model name is required");
             }
 
-            var result = await _ollamaService.SummarizeTranscriptAsync(request);
+            var result = await _summarizationService.SummarizeTranscriptAsync(request);
             return Ok(result);
         }
         catch (Exception ex)

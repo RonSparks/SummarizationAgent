@@ -31,26 +31,17 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add HTTP client for Ollama (using your existing instance)
-builder.Services.AddHttpClient<IOllamaService, OllamaService>(client =>
+// Add HTTP client for Ollama (generic service for all agents)
+builder.Services.AddHttpClient<IOllamaClient, OllamaClient>(client =>
 {
     client.BaseAddress = new Uri("http://localhost:11434/");
     client.Timeout = TimeSpan.FromMinutes(10); // 10 minutes timeout for large models
 });
 
-// Add HTTP client for User Story service (shares the same Ollama instance)
-builder.Services.AddHttpClient<IUserStoryService, UserStoryService>(client =>
-{
-    client.BaseAddress = new Uri("http://localhost:11434/");
-    client.Timeout = TimeSpan.FromMinutes(10); // 10 minutes timeout for large models
-});
-
-// Add HTTP client for Email Classifier service (shares the same Ollama instance)
-builder.Services.AddHttpClient<IEmailClassifierService, EmailClassifierService>(client =>
-{
-    client.BaseAddress = new Uri("http://localhost:11434/");
-    client.Timeout = TimeSpan.FromMinutes(10); // 10 minutes timeout for large models
-});
+// Register agent-specific services
+builder.Services.AddScoped<ISummarizationService, SummarizationService>();
+builder.Services.AddScoped<IUserStoryService, UserStoryService>();
+builder.Services.AddScoped<IEmailClassifierService, EmailClassifierService>();
 
 // Configure the application to listen on all network interfaces
 builder.WebHost.UseUrls("http://0.0.0.0:5000", "https://0.0.0.0:5001");

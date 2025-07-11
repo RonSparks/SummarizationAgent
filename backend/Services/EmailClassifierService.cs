@@ -7,108 +7,36 @@ namespace MeetingSummarizer.API.Services;
 
 public class EmailClassifierService : IEmailClassifierService
 {
-    private readonly HttpClient _httpClient;
+    private readonly IOllamaClient _ollamaClient;
     private readonly ILogger<EmailClassifierService> _logger;
 
-    public EmailClassifierService(HttpClient httpClient, ILogger<EmailClassifierService> logger)
+    public EmailClassifierService(IOllamaClient ollamaClient, ILogger<EmailClassifierService> logger)
     {
-        _httpClient = httpClient;
+        _ollamaClient = ollamaClient;
         _logger = logger;
     }
 
     public async Task<List<string>> GetAvailableModelsAsync()
     {
-        try
-        {
-            _logger.LogInformation("Fetching models from Ollama for Email Classifier service...");
-            var response = await _httpClient.GetAsync("api/tags");
-            _logger.LogInformation($"Ollama response status: {response.StatusCode}");
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"Ollama response content: {content}");
-                
-                var modelsResponse = JsonSerializer.Deserialize<OllamaModelsResponse>(content);
-                _logger.LogInformation($"Deserialized response: Models count = {modelsResponse?.Models?.Count ?? 0}");
-                
-                if (modelsResponse?.Models != null)
-                {
-                    foreach (var model in modelsResponse.Models)
-                    {
-                        _logger.LogInformation($"Model - Name: '{model.Name}', Model: '{model.Model}'");
-                    }
-                }
-                
-                var models = modelsResponse?.Models?.Select(m => !string.IsNullOrEmpty(m.Name) ? m.Name : m.Model).ToList() ?? new List<string>();
-                _logger.LogInformation($"Parsed models: {string.Join(", ", models)}");
-                return models;
-            }
-            else
-            {
-                _logger.LogError($"Ollama returned status code: {response.StatusCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting available models from Ollama");
-        }
-        
-        return new List<string>();
+        return await _ollamaClient.GetAvailableModelsAsync();
     }
 
     public async Task<EmailClassificationResponse> ClassifyEmailAsync(EmailClassificationRequest request)
     {
         var prompt = GenerateEmailClassificationPrompt(request.EmailBody, request.EmailMetadata);
         
-        var ollamaRequest = new OllamaGenerateRequest
-        {
-            Model = request.ModelName,
-            Prompt = prompt,
-            Stream = false
-        };
-
-        var json = JsonSerializer.Serialize(ollamaRequest);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await _httpClient.PostAsync("api/generate", content);
+        var response = await _ollamaClient.GenerateResponseAsync(request.ModelName, prompt);
         
-        if (response.IsSuccessStatusCode)
+        if (!string.IsNullOrEmpty(response))
         {
-            var responseContent = await response.Content.ReadAsStringAsync();
-            _logger.LogInformation($"Ollama email classification response: {responseContent}");
-            
-            try
-            {
-                var ollamaResponse = JsonSerializer.Deserialize<OllamaGenerateResponse>(responseContent);
-                _logger.LogInformation($"Deserialized Ollama response. Response field length: {ollamaResponse?.Response?.Length ?? 0}");
-                
-                if (ollamaResponse?.Response != null)
-                {
-                    return ParseEmailClassificationResponse(ollamaResponse.Response, request.ModelName);
-                }
-                else
-                {
-                    _logger.LogWarning("Ollama response is null or empty");
-                    return new EmailClassificationResponse
-                    {
-                        Classification = new EmailClassification(),
-                        ModelUsed = request.ModelName
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to deserialize Ollama response");
-                return new EmailClassificationResponse
-                {
-                    Classification = new EmailClassification(),
-                    ModelUsed = request.ModelName
-                };
-            }
+            return ParseEmailClassificationResponse(response, request.ModelName);
         }
 
-        throw new Exception($"Failed to classify email: {response.StatusCode}");
+        return new EmailClassificationResponse
+        {
+            Classification = new EmailClassification(),
+            ModelUsed = request.ModelName
+        };
     }
 
     private string GenerateEmailClassificationPrompt(string emailBody, string emailMetadata)

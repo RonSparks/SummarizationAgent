@@ -7,108 +7,36 @@ namespace MeetingSummarizer.API.Services;
 
 public class UserStoryService : IUserStoryService
 {
-    private readonly HttpClient _httpClient;
+    private readonly IOllamaClient _ollamaClient;
     private readonly ILogger<UserStoryService> _logger;
 
-    public UserStoryService(HttpClient httpClient, ILogger<UserStoryService> logger)
+    public UserStoryService(IOllamaClient ollamaClient, ILogger<UserStoryService> logger)
     {
-        _httpClient = httpClient;
+        _ollamaClient = ollamaClient;
         _logger = logger;
     }
 
     public async Task<List<string>> GetAvailableModelsAsync()
     {
-        try
-        {
-            _logger.LogInformation("Fetching models from Ollama for User Story service...");
-            var response = await _httpClient.GetAsync("api/tags");
-            _logger.LogInformation($"Ollama response status: {response.StatusCode}");
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"Ollama response content: {content}");
-                
-                var modelsResponse = JsonSerializer.Deserialize<OllamaModelsResponse>(content);
-                _logger.LogInformation($"Deserialized response: Models count = {modelsResponse?.Models?.Count ?? 0}");
-                
-                if (modelsResponse?.Models != null)
-                {
-                    foreach (var model in modelsResponse.Models)
-                    {
-                        _logger.LogInformation($"Model - Name: '{model.Name}', Model: '{model.Model}'");
-                    }
-                }
-                
-                var models = modelsResponse?.Models?.Select(m => !string.IsNullOrEmpty(m.Name) ? m.Name : m.Model).ToList() ?? new List<string>();
-                _logger.LogInformation($"Parsed models: {string.Join(", ", models)}");
-                return models;
-            }
-            else
-            {
-                _logger.LogError($"Ollama returned status code: {response.StatusCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting available models from Ollama");
-        }
-        
-        return new List<string>();
+        return await _ollamaClient.GetAvailableModelsAsync();
     }
 
     public async Task<UserStoryResponse> CreateUserStoryAsync(UserStoryRequest request)
     {
         var prompt = GenerateUserStoryPrompt(request.InputText, request.ProjectContext);
         
-        var ollamaRequest = new OllamaGenerateRequest
-        {
-            Model = request.ModelName,
-            Prompt = prompt,
-            Stream = false
-        };
-
-        var json = JsonSerializer.Serialize(ollamaRequest);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await _httpClient.PostAsync("api/generate", content);
+        var response = await _ollamaClient.GenerateResponseAsync(request.ModelName, prompt);
         
-        if (response.IsSuccessStatusCode)
+        if (!string.IsNullOrEmpty(response))
         {
-            var responseContent = await response.Content.ReadAsStringAsync();
-            _logger.LogInformation($"Ollama user story response: {responseContent}");
-            
-            try
-            {
-                var ollamaResponse = JsonSerializer.Deserialize<OllamaGenerateResponse>(responseContent);
-                _logger.LogInformation($"Deserialized Ollama response. Response field length: {ollamaResponse?.Response?.Length ?? 0}");
-                
-                if (ollamaResponse?.Response != null)
-                {
-                    return ParseUserStoryResponse(ollamaResponse.Response, request.ModelName);
-                }
-                else
-                {
-                    _logger.LogWarning("Ollama response is null or empty");
-                    return new UserStoryResponse
-                    {
-                        UserStory = new UserStory(),
-                        ModelUsed = request.ModelName
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to deserialize Ollama response");
-                return new UserStoryResponse
-                {
-                    UserStory = new UserStory(),
-                    ModelUsed = request.ModelName
-                };
-            }
+            return ParseUserStoryResponse(response, request.ModelName);
         }
 
-        throw new Exception($"Failed to create user story: {response.StatusCode}");
+        return new UserStoryResponse
+        {
+            UserStory = new UserStory(),
+            ModelUsed = request.ModelName
+        };
     }
 
     private string GenerateUserStoryPrompt(string inputText, string projectContext)

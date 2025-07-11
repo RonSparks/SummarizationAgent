@@ -45,6 +45,13 @@ builder.Services.AddHttpClient<IUserStoryService, UserStoryService>(client =>
     client.Timeout = TimeSpan.FromMinutes(10); // 10 minutes timeout for large models
 });
 
+// Add HTTP client for Email Classifier service (shares the same Ollama instance)
+builder.Services.AddHttpClient<IEmailClassifierService, EmailClassifierService>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:11434/");
+    client.Timeout = TimeSpan.FromMinutes(10); // 10 minutes timeout for large models
+});
+
 // Configure the application to listen on all network interfaces
 builder.WebHost.UseUrls("http://0.0.0.0:5000", "https://0.0.0.0:5001");
 

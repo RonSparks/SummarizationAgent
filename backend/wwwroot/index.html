@@ -14,11 +14,14 @@
         </div>
 
         <div class="agent-selector">
-            <button type="button" class="agent-btn active" onclick="switchAgent('summarizer')">
+            <button type="button" class="agent-btn active" onclick="switchAgent('summarizer', event)">
                 Meeting Summarizer
             </button>
-            <button type="button" class="agent-btn" onclick="switchAgent('userstory')">
+            <button type="button" class="agent-btn" onclick="switchAgent('userstory', event)">
                 User Story Creator
+            </button>
+            <button type="button" class="agent-btn" onclick="switchAgent('emailclassifier', event)">
+                Email Classifier
             </button>
         </div>
 
@@ -158,10 +161,69 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Email Classifier Agent -->
+            <div id="emailClassifierAgent" class="agent-content" style="display: none;">
+                <h2>Email Classifier Agent</h2>
+                <p>AI-powered email classification with tone analysis and priority assessment</p>
+                
+                <form id="emailClassifierForm">
+                    <div class="form-group">
+                        <label for="emailClassifierModelSelect">Select AI Model:</label>
+                        <select id="emailClassifierModelSelect" required>
+                            <option value="">Loading models...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emailBody">Email Body:</label>
+                        <textarea id="emailBody" placeholder="Paste the email content here..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emailMetadata">Email Metadata (Optional):</label>
+                        <textarea id="emailMetadata" placeholder="From: sender@example.com, Subject: Email Subject, Time: 10:30 AM"></textarea>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn" id="emailClassifierSubmitBtn">
+                            Classify Email
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="loadEmailSampleBtn" onclick="loadRandomEmailSample()">
+                            Load Sample
+                        </button>
+                    </div>
+                </form>
+
+                <div class="loading" id="emailClassifierLoading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Classifying email...</p>
+                    <p id="emailClassifierElapsedTime" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
+                </div>
+
+                <div class="error" id="emailClassifierError"></div>
+
+                <div class="results" id="emailClassifierResults" style="display: none;">
+                    <button class="download-btn" onclick="downloadEmailClassificationMarkdown()">Download Markdown</button>
+                    
+                    <div class="meta-info" id="emailClassifierMetaInfo"></div>
+
+                    <div class="section">
+                        <h3>Classification Result</h3>
+                        <div class="email-classification" id="emailClassificationContent"></div>
+                    </div>
+
+                    <div class="section" id="classificationDetailsSection" style="display: none;">
+                        <h3>Classification Details</h3>
+                        <div id="classificationDetails"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script src="scripts/app.js"></script>
     <script src="scripts/userStorySamples.js"></script>
+    <script src="scripts/emailSamples.js"></script>
 </body>
 </html> 

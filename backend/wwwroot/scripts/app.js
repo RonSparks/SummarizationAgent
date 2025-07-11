@@ -1,10 +1,12 @@
 let currentResult = null;
 let currentUserStoryResult = null;
+let currentEmailClassificationResult = null;
 
 // Fetch available models on page load
 window.addEventListener('DOMContentLoaded', async () => {
     await fetchModels();
     await fetchUserStoryModels();
+    await fetchEmailClassifierModels();
 });
 
 async function fetchModels() {
@@ -56,6 +58,32 @@ async function fetchUserStoryModels() {
         }
     } catch (error) {
         showUserStoryError('Failed to fetch available models. Make sure Ollama is running.');
+    }
+}
+
+async function fetchEmailClassifierModels() {
+    try {
+        const response = await fetch('/api/emailclassifier/models');
+        if (!response.ok) {
+            throw new Error('Failed to fetch email classifier models');
+        }
+        const models = await response.json();
+        
+        const select = document.getElementById('emailClassifierModelSelect');
+        select.innerHTML = '';
+        
+        if (models.length === 0) {
+            select.innerHTML = '<option value="">No models available</option>';
+        } else {
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        showEmailClassifierError('Failed to fetch available models. Make sure Ollama is running.');
     }
 }
 
@@ -160,8 +188,59 @@ document.getElementById('userStoryForm').addEventListener('submit', async (e) =>
     }
 });
 
+// Email Classifier form handler
+document.getElementById('emailClassifierForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const model = document.getElementById('emailClassifierModelSelect').value;
+    const emailBody = document.getElementById('emailBody').value.trim();
+    const emailMetadata = document.getElementById('emailMetadata').value.trim();
+
+    if (!model || !emailBody) {
+        showEmailClassifierError('Please select a model and enter email content.');
+        return;
+    }
+
+    setEmailClassifierLoading(true);
+    hideEmailClassifierError();
+    hideEmailClassifierResults();
+
+    // Record start time
+    const startTime = Date.now();
+
+    try {
+        const response = await fetch('/api/emailclassifier/classify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                emailBody: emailBody,
+                modelName: model,
+                emailMetadata: emailMetadata
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(errorData || 'Failed to classify email');
+        }
+
+        const result = await response.json();
+        const endTime = Date.now();
+        const elapsedTime = endTime - startTime;
+        
+        currentEmailClassificationResult = result;
+        displayEmailClassifierResults(result, elapsedTime);
+    } catch (error) {
+        showEmailClassifierError(error.message);
+    } finally {
+        setEmailClassifierLoading(false);
+    }
+});
+
 // Agent switching functionality
-function switchAgent(agentType) {
+function switchAgent(agentType, event) {
     // Update button states
     document.querySelectorAll('.agent-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -172,9 +251,15 @@ function switchAgent(agentType) {
     if (agentType === 'summarizer') {
         document.getElementById('summarizerAgent').style.display = 'block';
         document.getElementById('userStoryAgent').style.display = 'none';
+        document.getElementById('emailClassifierAgent').style.display = 'none';
     } else if (agentType === 'userstory') {
         document.getElementById('summarizerAgent').style.display = 'none';
         document.getElementById('userStoryAgent').style.display = 'block';
+        document.getElementById('emailClassifierAgent').style.display = 'none';
+    } else if (agentType === 'emailclassifier') {
+        document.getElementById('summarizerAgent').style.display = 'none';
+        document.getElementById('userStoryAgent').style.display = 'none';
+        document.getElementById('emailClassifierAgent').style.display = 'block';
     }
 }
 
@@ -273,6 +358,55 @@ function hideUserStoryError() {
 
 function hideUserStoryResults() {
     document.getElementById('userStoryResults').style.display = 'none';
+}
+
+// Email Classifier specific functions
+function setEmailClassifierLoading(loading) {
+    const loadingDiv = document.getElementById('emailClassifierLoading');
+    const submitBtn = document.getElementById('emailClassifierSubmitBtn');
+    const elapsedTimeDiv = document.getElementById('emailClassifierElapsedTime');
+    
+    if (loading) {
+        loadingDiv.style.display = 'block';
+        submitBtn.disabled = true;
+        
+        // Start elapsed time counter
+        const startTime = Date.now();
+        const timer = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+            elapsedTimeDiv.textContent = `Elapsed time: ${timeString}`;
+        }, 1000);
+        
+        // Store timer reference for cleanup
+        loadingDiv.dataset.timer = timer;
+    } else {
+        loadingDiv.style.display = 'none';
+        submitBtn.disabled = false;
+        
+        // Clear timer
+        if (loadingDiv.dataset.timer) {
+            clearInterval(parseInt(loadingDiv.dataset.timer));
+            loadingDiv.dataset.timer = '';
+        }
+        elapsedTimeDiv.textContent = '';
+    }
+}
+
+function showEmailClassifierError(message) {
+    const errorDiv = document.getElementById('emailClassifierError');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function hideEmailClassifierError() {
+    document.getElementById('emailClassifierError').style.display = 'none';
+}
+
+function hideEmailClassifierResults() {
+    document.getElementById('emailClassifierResults').style.display = 'none';
 }
 
 function displayResults(result, elapsedTime) {
@@ -418,6 +552,78 @@ function displayUserStoryResults(result, elapsedTime) {
     document.getElementById('storyDetailsSection').style.display = 'block';
 
     document.getElementById('userStoryResults').style.display = 'block';
+}
+
+function displayEmailClassifierResults(result, elapsedTime) {
+    // Format elapsed time
+    const minutes = Math.floor(elapsedTime / 60000);
+    const seconds = Math.floor((elapsedTime % 60000) / 1000);
+    const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+    
+    // Meta info
+    document.getElementById('emailClassifierMetaInfo').innerHTML = `
+        <strong>Model Used:</strong> ${result.modelUsed}<br>
+        <strong>Processed At:</strong> ${new Date(result.processedAt).toLocaleString()}<br>
+        <strong>Processing Time:</strong> <span class="processing-time">${timeString}</span>
+    `;
+
+    const classification = result.classification;
+    
+    // Get CSS class for classification label
+    const labelClass = getClassificationLabelClass(classification.label);
+    
+    // Email Classification Content
+    document.getElementById('emailClassificationContent').innerHTML = `
+        <h4>Email Classification</h4>
+        <div class="classification-label ${labelClass}">${classification.label}</div>
+        <div class="confidence-bar">
+            <div class="confidence-text">Confidence: ${Math.round(classification.confidence * 100)}%</div>
+            <div class="confidence-fill" style="width: ${classification.confidence * 100}%"></div>
+        </div>
+        <div class="explanation">
+            <strong>Explanation:</strong> ${classification.explanation}
+        </div>
+    `;
+
+    // Classification Details
+    const classificationDetailsDiv = document.getElementById('classificationDetails');
+    classificationDetailsDiv.innerHTML = `
+        <div class="classification-details-grid">
+            <div class="classification-detail-item">
+                <strong>Tone</strong>
+                <span>${classification.tone}</span>
+            </div>
+            <div class="classification-detail-item">
+                <strong>Priority</strong>
+                <span>${classification.priority}</span>
+            </div>
+            <div class="classification-detail-item">
+                <strong>Suggested Action</strong>
+                <span>${classification.suggestedAction}</span>
+            </div>
+        </div>
+        ${classification.tags && classification.tags.length > 0 ? `
+            <div class="classification-tags">
+                <strong>Tags:</strong><br>
+                ${classification.tags.map(tag => `<span>${tag}</span>`).join('')}
+            </div>
+        ` : ''}
+    `;
+    document.getElementById('classificationDetailsSection').style.display = 'block';
+
+    document.getElementById('emailClassifierResults').style.display = 'block';
+}
+
+function getClassificationLabelClass(label) {
+    const labelLower = label.toLowerCase();
+    if (labelLower.includes('urgent')) return 'classification-urgent';
+    if (labelLower.includes('fyi')) return 'classification-fyi';
+    if (labelLower.includes('action')) return 'classification-action';
+    if (labelLower.includes('spam')) return 'classification-spam';
+    if (labelLower.includes('meeting')) return 'classification-meeting';
+    if (labelLower.includes('follow')) return 'classification-followup';
+    if (labelLower.includes('newsletter')) return 'classification-newsletter';
+    return 'classification-other';
 }
 
 function loadRandomSample() {
@@ -662,6 +868,45 @@ ${userStory.labels.map(label => `- ${label}`).join('\n')}` : ''}
     const a = document.createElement('a');
     a.href = url;
     a.download = `user-story-${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function downloadEmailClassificationMarkdown() {
+    if (!currentEmailClassificationResult) return;
+
+    const processingTime = document.querySelector('#emailClassifierMetaInfo .processing-time')?.textContent || 'Unknown';
+    const classification = currentEmailClassificationResult.classification;
+    
+    const markdown = `# Email Classification
+
+**Model Used:** ${currentEmailClassificationResult.modelUsed}
+**Processed At:** ${new Date(currentEmailClassificationResult.processedAt).toLocaleString()}
+**Processing Time:** ${processingTime}
+
+## Classification Result
+**Label:** ${classification.label}
+**Confidence:** ${Math.round(classification.confidence * 100)}%
+**Tone:** ${classification.tone}
+**Priority:** ${classification.priority}
+
+## Explanation
+${classification.explanation}
+
+## Suggested Action
+${classification.suggestedAction}
+
+${classification.tags && classification.tags.length > 0 ? `## Tags
+${classification.tags.map(tag => `- ${tag}`).join('\n')}` : ''}
+`;
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `email-classification-${new Date().toISOString().split('T')[0]}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

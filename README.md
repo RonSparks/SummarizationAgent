@@ -1,16 +1,17 @@
 # AI Agent Hub
 
-A multi-agent AI platform that provides two specialized AI agents for different tasks:
+A multi-agent AI platform that provides three specialized AI agents for different tasks:
 
 1. **Meeting Summarizer Agent** - Analyzes meeting transcripts and creates structured summaries
 2. **User Story Creator Agent** - Converts requirements into Jira-ready user stories
+3. **Email Classifier Agent** - Classifies emails with tone analysis and priority assessment
 
 ## Architecture
 
 - **Frontend**: Modern HTML/JavaScript application with agent switching
 - **Backend**: .NET Core API with static file serving
 - **AI**: Local LLM via Ollama in Docker container
-- **Features**: Dual-agent system, structured output, network accessibility
+- **Features**: Three-agent system, structured output, network accessibility
 
 ## Project Structure
 
@@ -51,6 +52,7 @@ SummarizationAgent/
 4. **Test with sample data**:
    - Meeting Summarizer: Use "Load Sample" button
    - User Story Creator: Use "Load Sample" button for 5 different scenarios
+   - Email Classifier: Use "Load Sample" button for various email types
 
 ## Features
 
@@ -74,10 +76,20 @@ SummarizationAgent/
 - Project context integration
 - Download user stories as markdown files
 
+### Email Classifier Agent
+- Email content classification (Urgent, FYI, Action Required, Spam, etc.)
+- Tone analysis (Professional, Casual, Formal, Aggressive, etc.)
+- Priority assessment (High, Medium, Low)
+- Suggested action recommendations
+- Confidence scoring with visual indicators
+- Optional metadata input (sender, subject, time)
+- Tag generation for categorization
+- Download classification results as markdown files
+
 ### General Features
-- **Agent Switching**: Seamless switching between agents
+- **Agent Switching**: Seamless switching between three agents
 - **Network Accessibility**: Accessible from other computers on the network
-- **Sample Data**: Built-in sample conversations for both agents
+- **Sample Data**: Built-in sample conversations for all agents
 - **Real-time Processing**: Live elapsed time tracking
 - **Error Handling**: Comprehensive error messages and fallbacks
 
@@ -90,6 +102,10 @@ SummarizationAgent/
 ### User Story Creator
 - `GET /api/userstory/models` - Get available AI models
 - `POST /api/userstory/create` - Create user story from requirements
+
+### Email Classifier
+- `GET /api/emailclassifier/models` - Get available AI models
+- `POST /api/emailclassifier/classify` - Classify email content
 
 ## Usage Examples
 
@@ -109,6 +125,14 @@ SummarizationAgent/
 5. Review the generated user story with acceptance criteria
 6. Download the user story as a markdown file
 
+### Email Classifier
+1. Select an AI model from the dropdown
+2. Paste the email content you want to classify
+3. Optionally provide email metadata (sender, subject, time)
+4. Click "Classify Email" or "Load Sample"
+5. Review the classification with tone analysis and priority assessment
+6. Download the classification results as a markdown file
+
 ## Sample Data
 
 ### Meeting Summarizer Samples
@@ -122,6 +146,15 @@ SummarizationAgent/
 - E-commerce shopping cart
 - Marketing email campaigns
 - Real-time chat functionality
+
+### Email Classifier Samples
+- Urgent client request
+- Newsletter subscription
+- Meeting invitation
+- Spam/phishing attempt
+- FYI announcement
+- Action required task
+- Follow-up reminder
 
 ## Configuration
 
@@ -139,16 +172,16 @@ The application allows all origins, methods, and headers for development purpose
 ## Development
 
 ### Backend Structure
-- **Controllers**: API endpoints for both agents
+- **Controllers**: API endpoints for all three agents
 - **Services**: AI service implementations using Ollama
 - **Models**: Request/response data structures
 - **wwwroot**: Static frontend files served by the API
 
 ### Frontend Structure
-- **Agent Switching**: JavaScript-based UI switching
+- **Agent Switching**: JavaScript-based UI switching between three agents
 - **Real-time Updates**: Live processing time tracking
 - **Error Handling**: User-friendly error messages
-- **Sample Loading**: Built-in sample data for testing
+- **Sample Loading**: Built-in sample data for testing all agents
 
 ## Troubleshooting
 
@@ -157,6 +190,7 @@ The application allows all origins, methods, and headers for development purpose
 2. **Network access issues**: Check Windows Firewall settings for port 5000
 3. **Processing timeouts**: Large models may take several minutes to process
 4. **CORS errors**: The application is configured to allow all origins
+5. **Agent switching not working**: Ensure JavaScript is enabled and no console errors
 
 ### Debug Mode
 Enable debug logging by setting `"logDebug": true` in `appsettings.json`.
@@ -167,12 +201,28 @@ Enable debug logging by setting `"logDebug": true` in `appsettings.json`.
 - **Network Access**: The application is accessible to anyone on your network
 - **Production**: Use proper authentication, HTTPS, and firewall rules for production deployment
 
+## Recent Updates
+
+### Email Classifier Agent (Latest)
+- Added new Email Classifier agent for email classification
+- Supports multiple classification categories (Urgent, FYI, Action Required, Spam, etc.)
+- Includes tone analysis and priority assessment
+- Features confidence scoring with visual indicators
+- Provides suggested actions and tagging
+- Includes sample email data for testing
+
+### Technical Improvements
+- Fixed agent switching functionality in JavaScript
+- Enhanced error handling for all three agents
+- Improved UI responsiveness and user experience
+- Added comprehensive sample data for all agents
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test both agents thoroughly
+4. Test all three agents thoroughly
 5. Submit a pull request
 
 ## License

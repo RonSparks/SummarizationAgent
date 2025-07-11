@@ -326,6 +326,98 @@ textarea {
     font-weight: 600;
 }
 
+.email-classification {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    margin-bottom: 20px;
+}
+
+.email-classification h4 {
+    color: #667eea;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.email-classification .classification-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.classification-urgent { background: #dc3545; color: white; }
+.classification-fyi { background: #17a2b8; color: white; }
+.classification-action { background: #ffc107; color: #212529; }
+.classification-spam { background: #6c757d; color: white; }
+.classification-meeting { background: #28a745; color: white; }
+.classification-followup { background: #fd7e14; color: white; }
+.classification-newsletter { background: #6f42c1; color: white; }
+.classification-other { background: #e9ecef; color: #495057; }
+
+.email-classification .confidence-bar {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 15px 0;
+}
+
+.email-classification .confidence-text {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.email-classification .confidence-fill {
+    height: 8px;
+    background: #28a745;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.classification-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.classification-detail-item {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.classification-detail-item strong {
+    display: block;
+    color: #495057;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.classification-detail-item span {
+    color: #667eea;
+    font-weight: 600;
+}
+
+.classification-tags {
+    margin-top: 15px;
+}
+
+.classification-tags span {
+    background: #667eea;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-right: 5px;
+    font-size: 12px;
+    display: inline-block;
+    margin-bottom: 5px;
+}
+
 .download-btn {
     background: #28a745;
     color: white;

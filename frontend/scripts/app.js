@@ -1,8 +1,10 @@
 let currentResult = null;
+let currentUserStoryResult = null;
 
 // Fetch available models on page load
 window.addEventListener('DOMContentLoaded', async () => {
     await fetchModels();
+    await fetchUserStoryModels();
 });
 
 async function fetchModels() {
@@ -28,6 +30,32 @@ async function fetchModels() {
         }
     } catch (error) {
         showError('Failed to fetch available models. Make sure Ollama is running.');
+    }
+}
+
+async function fetchUserStoryModels() {
+    try {
+        const response = await fetch('/api/userstory/models');
+        if (!response.ok) {
+            throw new Error('Failed to fetch user story models');
+        }
+        const models = await response.json();
+        
+        const select = document.getElementById('userStoryModelSelect');
+        select.innerHTML = '';
+        
+        if (models.length === 0) {
+            select.innerHTML = '<option value="">No models available</option>';
+        } else {
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        showUserStoryError('Failed to fetch available models. Make sure Ollama is running.');
     }
 }
 
@@ -81,6 +109,75 @@ document.getElementById('summarizeForm').addEventListener('submit', async (e) =>
     }
 });
 
+// User Story form handler
+document.getElementById('userStoryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const model = document.getElementById('userStoryModelSelect').value;
+    const inputText = document.getElementById('inputText').value.trim();
+    const projectContext = document.getElementById('projectContext').value.trim();
+
+    if (!model || !inputText) {
+        showUserStoryError('Please select a model and enter input text.');
+        return;
+    }
+
+    setUserStoryLoading(true);
+    hideUserStoryError();
+    hideUserStoryResults();
+
+    // Record start time
+    const startTime = Date.now();
+
+    try {
+        const response = await fetch('/api/userstory/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                inputText: inputText,
+                modelName: model,
+                projectContext: projectContext
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(errorData || 'Failed to create user story');
+        }
+
+        const result = await response.json();
+        const endTime = Date.now();
+        const elapsedTime = endTime - startTime;
+        
+        currentUserStoryResult = result;
+        displayUserStoryResults(result, elapsedTime);
+    } catch (error) {
+        showUserStoryError(error.message);
+    } finally {
+        setUserStoryLoading(false);
+    }
+});
+
+// Agent switching functionality
+function switchAgent(agentType) {
+    // Update button states
+    document.querySelectorAll('.agent-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Show/hide agent content
+    if (agentType === 'summarizer') {
+        document.getElementById('summarizerAgent').style.display = 'block';
+        document.getElementById('userStoryAgent').style.display = 'none';
+    } else if (agentType === 'userstory') {
+        document.getElementById('summarizerAgent').style.display = 'none';
+        document.getElementById('userStoryAgent').style.display = 'block';
+    }
+}
+
 function setLoading(loading) {
     const loadingDiv = document.getElementById('loading');
     const submitBtn = document.getElementById('submitBtn');
@@ -127,6 +224,55 @@ function hideError() {
 
 function hideResults() {
     document.getElementById('results').style.display = 'none';
+}
+
+// User Story specific functions
+function setUserStoryLoading(loading) {
+    const loadingDiv = document.getElementById('userStoryLoading');
+    const submitBtn = document.getElementById('userStorySubmitBtn');
+    const elapsedTimeDiv = document.getElementById('userStoryElapsedTime');
+    
+    if (loading) {
+        loadingDiv.style.display = 'block';
+        submitBtn.disabled = true;
+        
+        // Start elapsed time counter
+        const startTime = Date.now();
+        const timer = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+            elapsedTimeDiv.textContent = `Elapsed time: ${timeString}`;
+        }, 1000);
+        
+        // Store timer reference for cleanup
+        loadingDiv.dataset.timer = timer;
+    } else {
+        loadingDiv.style.display = 'none';
+        submitBtn.disabled = false;
+        
+        // Clear timer
+        if (loadingDiv.dataset.timer) {
+            clearInterval(parseInt(loadingDiv.dataset.timer));
+            loadingDiv.dataset.timer = '';
+        }
+        elapsedTimeDiv.textContent = '';
+    }
+}
+
+function showUserStoryError(message) {
+    const errorDiv = document.getElementById('userStoryError');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function hideUserStoryError() {
+    document.getElementById('userStoryError').style.display = 'none';
+}
+
+function hideUserStoryResults() {
+    document.getElementById('userStoryResults').style.display = 'none';
 }
 
 function displayResults(result, elapsedTime) {
@@ -197,6 +343,81 @@ function displayResults(result, elapsedTime) {
     }
 
     document.getElementById('results').style.display = 'block';
+}
+
+function displayUserStoryResults(result, elapsedTime) {
+    // Format elapsed time
+    const minutes = Math.floor(elapsedTime / 60000);
+    const seconds = Math.floor((elapsedTime % 60000) / 1000);
+    const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+    
+    // Meta info
+    document.getElementById('userStoryMetaInfo').innerHTML = `
+        <strong>Model Used:</strong> ${result.modelUsed}<br>
+        <strong>Processed At:</strong> ${new Date(result.processedAt).toLocaleString()}<br>
+        <strong>Processing Time:</strong> <span class="processing-time">${timeString}</span>
+    `;
+
+    const userStory = result.userStory;
+    
+    // User Story Content
+    document.getElementById('userStoryContent').innerHTML = `
+        <h4>${userStory.title}</h4>
+        <div class="story-text">${userStory.story}</div>
+        <div class="story-details">
+            <div class="detail-item">
+                <strong>Persona:</strong> ${userStory.persona}
+            </div>
+            <div class="detail-item">
+                <strong>Want:</strong> ${userStory.want}
+            </div>
+            <div class="detail-item">
+                <strong>So That:</strong> ${userStory.soThat}
+            </div>
+        </div>
+    `;
+
+    // Acceptance Criteria
+    if (userStory.acceptanceCriteria && userStory.acceptanceCriteria.length > 0) {
+        const acceptanceCriteriaDiv = document.getElementById('acceptanceCriteria');
+        acceptanceCriteriaDiv.innerHTML = userStory.acceptanceCriteria.map(criteria => `
+            <div class="acceptance-criteria">
+                ${criteria}
+            </div>
+        `).join('');
+        document.getElementById('acceptanceCriteriaSection').style.display = 'block';
+    }
+
+    // Story Details
+    const storyDetailsDiv = document.getElementById('storyDetails');
+    storyDetailsDiv.innerHTML = `
+        <div class="story-details-grid">
+            <div class="story-detail-item">
+                <strong>Epic</strong>
+                <span>${userStory.epic}</span>
+            </div>
+            <div class="story-detail-item">
+                <strong>Type</strong>
+                <span>${userStory.storyType}</span>
+            </div>
+            <div class="story-detail-item">
+                <strong>Priority</strong>
+                <span>${userStory.priority}</span>
+            </div>
+            <div class="story-detail-item">
+                <strong>Story Points</strong>
+                <span>${userStory.storyPoints || 'Not set'}</span>
+            </div>
+        </div>
+        ${userStory.labels && userStory.labels.length > 0 ? `
+            <div style="margin-top: 15px;">
+                <strong>Labels:</strong> ${userStory.labels.map(label => `<span style="background: #667eea; color: white; padding: 4px 8px; border-radius: 4px; margin-right: 5px; font-size: 12px;">${label}</span>`).join('')}
+            </div>
+        ` : ''}
+    `;
+    document.getElementById('storyDetailsSection').style.display = 'block';
+
+    document.getElementById('userStoryResults').style.display = 'block';
 }
 
 function loadRandomSample() {
@@ -477,6 +698,50 @@ ${currentResult.speakerSentiments.map(sentiment => `- **${sentiment.speaker}**: 
     const a = document.createElement('a');
     a.href = url;
     a.download = `meeting-summary-${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function downloadUserStoryMarkdown() {
+    if (!currentUserStoryResult) return;
+
+    const processingTime = document.querySelector('#userStoryMetaInfo .processing-time')?.textContent || 'Unknown';
+    const userStory = currentUserStoryResult.userStory;
+    
+    const markdown = `# User Story
+
+**Model Used:** ${currentUserStoryResult.modelUsed}
+**Processed At:** ${new Date(currentUserStoryResult.processedAt).toLocaleString()}
+**Processing Time:** ${processingTime}
+
+## Story Details
+**Title:** ${userStory.title}
+**Epic:** ${userStory.epic}
+**Type:** ${userStory.storyType}
+**Priority:** ${userStory.priority}
+**Story Points:** ${userStory.storyPoints || 'Not set'}
+
+## User Story
+${userStory.story}
+
+**Persona:** ${userStory.persona}
+**Want:** ${userStory.want}
+**So That:** ${userStory.soThat}
+
+## Acceptance Criteria
+${userStory.acceptanceCriteria.map(criteria => `- ${criteria}`).join('\n')}
+
+${userStory.labels && userStory.labels.length > 0 ? `## Labels
+${userStory.labels.map(label => `- ${label}`).join('\n')}` : ''}
+`;
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `user-story-${new Date().toISOString().split('T')[0]}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

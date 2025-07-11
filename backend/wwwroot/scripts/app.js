@@ -1,8 +1,10 @@
 let currentResult = null;
+let currentUserStoryResult = null;
 
 // Fetch available models on page load
 window.addEventListener('DOMContentLoaded', async () => {
     await fetchModels();
+    await fetchUserStoryModels();
 });
 
 async function fetchModels() {
@@ -28,6 +30,32 @@ async function fetchModels() {
         }
     } catch (error) {
         showError('Failed to fetch available models. Make sure Ollama is running.');
+    }
+}
+
+async function fetchUserStoryModels() {
+    try {
+        const response = await fetch('/api/userstory/models');
+        if (!response.ok) {
+            throw new Error('Failed to fetch user story models');
+        }
+        const models = await response.json();
+        
+        const select = document.getElementById('userStoryModelSelect');
+        select.innerHTML = '';
+        
+        if (models.length === 0) {
+            select.innerHTML = '<option value="">No models available</option>';
+        } else {
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        showUserStoryError('Failed to fetch available models. Make sure Ollama is running.');
     }
 }
 
@@ -81,6 +109,75 @@ document.getElementById('summarizeForm').addEventListener('submit', async (e) =>
     }
 });
 
+// User Story form handler
+document.getElementById('userStoryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const model = document.getElementById('userStoryModelSelect').value;
+    const inputText = document.getElementById('inputText').value.trim();
+    const projectContext = document.getElementById('projectContext').value.trim();
+
+    if (!model || !inputText) {
+        showUserStoryError('Please select a model and enter input text.');
+        return;
+    }
+
+    setUserStoryLoading(true);
+    hideUserStoryError();
+    hideUserStoryResults();
+
+    // Record start time
+    const startTime = Date.now();
+
+    try {
+        const response = await fetch('/api/userstory/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                inputText: inputText,
+                modelName: model,
+                projectContext: projectContext
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(errorData || 'Failed to create user story');
+        }
+
+        const result = await response.json();
+        const endTime = Date.now();
+        const elapsedTime = endTime - startTime;
+        
+        currentUserStoryResult = result;
+        displayUserStoryResults(result, elapsedTime);
+    } catch (error) {
+        showUserStoryError(error.message);
+    } finally {
+        setUserStoryLoading(false);
+    }
+});
+
+// Agent switching functionality
+function switchAgent(agentType) {
+    // Update button states
+    document.querySelectorAll('.agent-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Show/hide agent content
+    if (agentType === 'summarizer') {
+        document.getElementById('summarizerAgent').style.display = 'block';
+        document.getElementById('userStoryAgent').style.display = 'none';
+    } else if (agentType === 'userstory') {
+        document.getElementById('summarizerAgent').style.display = 'none';
+        document.getElementById('userStoryAgent').style.display = 'block';
+    }
+}
+
 function setLoading(loading) {
     const loadingDiv = document.getElementById('loading');
     const submitBtn = document.getElementById('submitBtn');
@@ -127,6 +224,55 @@ function hideError() {
 
 function hideResults() {
     document.getElementById('results').style.display = 'none';
+}
+
+// User Story specific functions
+function setUserStoryLoading(loading) {
+    const loadingDiv = document.getElementById('userStoryLoading');
+    const submitBtn = document.getElementById('userStorySubmitBtn');
+    const elapsedTimeDiv = document.getElementById('userStoryElapsedTime');
+    
+    if (loading) {
+        loadingDiv.style.display = 'block';
+        submitBtn.disabled = true;
+        
+        // Start elapsed time counter
+        const startTime = Date.now();
+        const timer = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+            elapsedTimeDiv.textContent = `Elapsed time: ${timeString}`;
+        }, 1000);
+        
+        // Store timer reference for cleanup
+        loadingDiv.dataset.timer = timer;
+    } else {
+        loadingDiv.style.display = 'none';
+        submitBtn.disabled = false;
+        
+        // Clear timer
+        if (loadingDiv.dataset.timer) {
+            clearInterval(parseInt(loadingDiv.dataset.timer));
+            loadingDiv.dataset.timer = '';
+        }
+        elapsedTimeDiv.textContent = '';
+    }
+}
+
+function showUserStoryError(message) {
+    const errorDiv = document.getElementById('userStoryError');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function hideUserStoryError() {
+    document.getElementById('userStoryError').style.display = 'none';
+}
+
+function hideUserStoryResults() {
+    document.getElementById('userStoryResults').style.display = 'none';
 }
 
 function displayResults(result, elapsedTime) {
@@ -199,91 +345,86 @@ function displayResults(result, elapsedTime) {
     document.getElementById('results').style.display = 'block';
 }
 
+function displayUserStoryResults(result, elapsedTime) {
+    // Format elapsed time
+    const minutes = Math.floor(elapsedTime / 60000);
+    const seconds = Math.floor((elapsedTime % 60000) / 1000);
+    const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+    
+    // Meta info
+    document.getElementById('userStoryMetaInfo').innerHTML = `
+        <strong>Model Used:</strong> ${result.modelUsed}<br>
+        <strong>Processed At:</strong> ${new Date(result.processedAt).toLocaleString()}<br>
+        <strong>Processing Time:</strong> <span class="processing-time">${timeString}</span>
+    `;
+
+    const userStory = result.userStory;
+    
+    // User Story Content
+    document.getElementById('userStoryContent').innerHTML = `
+        <h4>${userStory.title}</h4>
+        <div class="story-text">${userStory.story}</div>
+        <div class="story-details">
+            <div class="detail-item">
+                <strong>Persona:</strong> ${userStory.persona}
+            </div>
+            <div class="detail-item">
+                <strong>Want:</strong> ${userStory.want}
+            </div>
+            <div class="detail-item">
+                <strong>So That:</strong> ${userStory.soThat}
+            </div>
+        </div>
+    `;
+
+    // Acceptance Criteria
+    if (userStory.acceptanceCriteria && userStory.acceptanceCriteria.length > 0) {
+        const acceptanceCriteriaDiv = document.getElementById('acceptanceCriteria');
+        acceptanceCriteriaDiv.innerHTML = userStory.acceptanceCriteria.map(criteria => `
+            <div class="acceptance-criteria">
+                ${criteria}
+            </div>
+        `).join('');
+        document.getElementById('acceptanceCriteriaSection').style.display = 'block';
+    }
+
+    // Story Details
+    const storyDetailsDiv = document.getElementById('storyDetails');
+    storyDetailsDiv.innerHTML = `
+        <div class="story-details-grid">
+            <div class="story-detail-item">
+                <strong>Epic</strong>
+                <span>${userStory.epic}</span>
+            </div>
+            <div class="story-detail-item">
+                <strong>Type</strong>
+                <span>${userStory.storyType}</span>
+            </div>
+            <div class="story-detail-item">
+                <strong>Priority</strong>
+                <span>${userStory.priority}</span>
+            </div>
+            <div class="story-detail-item">
+                <strong>Story Points</strong>
+                <span>${userStory.storyPoints || 'Not set'}</span>
+            </div>
+        </div>
+        ${userStory.labels && userStory.labels.length > 0 ? `
+            <div style="margin-top: 15px;">
+                <strong>Labels:</strong> ${userStory.labels.map(label => `<span style="background: #667eea; color: white; padding: 4px 8px; border-radius: 4px; margin-right: 5px; font-size: 12px;">${label}</span>`).join('')}
+            </div>
+        ` : ''}
+    `;
+    document.getElementById('storyDetailsSection').style.display = 'block';
+
+    document.getElementById('userStoryResults').style.display = 'block';
+}
+
 function loadRandomSample() {
     const samples = [
         {
-            title: "Weekly Team Meeting",
-            content: `John (Project Manager): Good morning everyone, let's start our weekly team meeting. Sarah, can you give us an update on the Q4 project timeline?
-
-Sarah (Developer): Thanks John. We're currently on track with the main features. The authentication system is complete, and we're 80% done with the payment integration. However, we've hit a roadblock with the third-party API integration.
-
-Mike (Backend Developer): I've been working on that API issue. The documentation was outdated, so I had to reverse engineer some endpoints. It's taking longer than expected.
-
-John: How much longer do you think it will take?
-
-Mike: Probably another week. The good news is once we get this working, the rest should be straightforward.
-
-Sarah: That's going to push our deadline back by at least a week. Should we inform the client?
-
-John: Yes, let's be proactive about this. Sarah, can you draft an email to the client explaining the delay and our plan to catch up?
-
-Sarah: Absolutely, I'll send that by end of day.
-
-Mike: I'll also create a detailed technical report for the client explaining what we discovered.
-
-John: Perfect. Now, let's talk about the upcoming sprint. We need to prioritize the remaining features.
-
-Sarah: I think we should focus on the user dashboard first, then the reporting module.
-
-Mike: I agree. The dashboard is more critical for the MVP.
-
-John: Sounds good. Sarah, can you update the project plan with the new timeline?
-
-Sarah: Will do. I'll have that ready by Friday.
-
-John: Great. Any other issues or concerns?
-
-Mike: Just one thing - we might need to upgrade our server capacity for the payment processing.
-
-John: I'll look into that this week. Thanks everyone, that's all for today.`
-        },
-        {
-            title: "Product Planning Meeting",
-            content: `Alice (Product Manager): Welcome to our Q1 product planning session. Today we need to decide on our roadmap for the next quarter. Let's start with the mobile app features.
-
-Bob (Designer): I've been researching user feedback. The top requests are dark mode, push notifications, and offline sync.
-
-Charlie (Mobile Developer): Dark mode is straightforward to implement. Push notifications will require backend changes and Apple/Google approval. Offline sync is the most complex - we'll need to redesign our data architecture.
-
-Alice: How long would each feature take?
-
-Charlie: Dark mode - 1 week. Push notifications - 3 weeks including approval time. Offline sync - 6-8 weeks.
-
-Bob: I think we should prioritize dark mode first since it's quick and has high user demand.
-
-Alice: I agree. What about the web platform features?
-
-David (Frontend Developer): We need to improve the dashboard performance. Users are complaining about slow load times.
-
-Emma (Backend Developer): I can optimize the API endpoints. That should reduce load times by 60-70%.
-
-Alice: How long will that take?
-
-Emma: About 2 weeks for the optimizations, plus testing.
-
-Alice: Perfect. Let's prioritize: 1) Dark mode, 2) API optimizations, 3) Push notifications. We'll tackle offline sync in Q2.
-
-Bob: Should we also plan for the new analytics dashboard?
-
-Alice: Yes, but let's keep it simple for Q1. We can add basic charts and user metrics.
-
-David: I can start working on the analytics framework next week.
-
-Alice: Great. Any budget concerns?
-
-Emma: We might need to upgrade our database plan for the analytics features.
-
-Alice: I'll check with finance about the budget allocation. Any other items?
-
-Charlie: Just a reminder that we need to plan for the iOS 17 compatibility update.
-
-Alice: Good point. Let's add that to the Q1 list. Thanks everyone!`
-        },
-        {
-            title: "Client Meeting",
-            content: `Client (Sarah Johnson): Hi everyone, thanks for joining us today. We're excited to see the progress on our e-commerce platform.
-
-Project Manager (Alex): Thank you for your time, Sarah. We've made significant progress since our last meeting. Let me walk you through the current status.
+            title: "Product Development Meeting",
+            content: `Project Manager (Alex): Thank you for your time, Sarah. We've made significant progress since our last meeting. Let me walk you through the current status.
 
 Developer (Maria): We've completed the user registration and login system. The product catalog is fully functional, and we're 90% done with the shopping cart.
 
@@ -477,6 +618,50 @@ ${currentResult.speakerSentiments.map(sentiment => `- **${sentiment.speaker}**: 
     const a = document.createElement('a');
     a.href = url;
     a.download = `meeting-summary-${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function downloadUserStoryMarkdown() {
+    if (!currentUserStoryResult) return;
+
+    const processingTime = document.querySelector('#userStoryMetaInfo .processing-time')?.textContent || 'Unknown';
+    const userStory = currentUserStoryResult.userStory;
+    
+    const markdown = `# User Story
+
+**Model Used:** ${currentUserStoryResult.modelUsed}
+**Processed At:** ${new Date(currentUserStoryResult.processedAt).toLocaleString()}
+**Processing Time:** ${processingTime}
+
+## Story Details
+**Title:** ${userStory.title}
+**Epic:** ${userStory.epic}
+**Type:** ${userStory.storyType}
+**Priority:** ${userStory.priority}
+**Story Points:** ${userStory.storyPoints || 'Not set'}
+
+## User Story
+${userStory.story}
+
+**Persona:** ${userStory.persona}
+**Want:** ${userStory.want}
+**So That:** ${userStory.soThat}
+
+## Acceptance Criteria
+${userStory.acceptanceCriteria.map(criteria => `- ${criteria}`).join('\n')}
+
+${userStory.labels && userStory.labels.length > 0 ? `## Labels
+${userStory.labels.map(label => `- ${label}`).join('\n')}` : ''}
+`;
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `user-story-${new Date().toISOString().split('T')[0]}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

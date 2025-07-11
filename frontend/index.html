@@ -9,12 +9,26 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Meeting Summarizer Agent</h1>
-            <p>AI-powered meeting transcript analysis with structured summaries</p>
+            <h1>AI Agent Hub</h1>
+            <p>Choose your AI agent for different tasks</p>
+        </div>
+
+        <div class="agent-selector">
+            <button type="button" class="agent-btn active" onclick="switchAgent('summarizer')">
+                Meeting Summarizer
+            </button>
+            <button type="button" class="agent-btn" onclick="switchAgent('userstory')">
+                User Story Creator
+            </button>
         </div>
 
         <div class="content">
-            <form id="summarizeForm">
+            <!-- Meeting Summarizer Agent -->
+            <div id="summarizerAgent" class="agent-content">
+                <h2>Meeting Summarizer Agent</h2>
+                <p>AI-powered meeting transcript analysis with structured summaries</p>
+                
+                <form id="summarizeForm">
                 <div class="form-group">
                     <label for="modelSelect">Select AI Model:</label>
                     <select id="modelSelect" required>
@@ -40,49 +54,114 @@
                         Load Sample
                     </button>
                 </div>
-            </form>
+                </form>
 
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Processing transcript...</p>
-                <p id="elapsedTime" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing transcript...</p>
+                    <p id="elapsedTime" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
+                </div>
+
+                <div class="error" id="error"></div>
+
+                <div class="results" id="results">
+                    <button class="download-btn" onclick="downloadMarkdown()">Download Markdown</button>
+                    
+                    <div class="meta-info" id="metaInfo"></div>
+
+                    <div class="section">
+                        <h3>Summary</h3>
+                        <div class="summary-text" id="summaryText"></div>
+                    </div>
+
+                    <div class="section" id="actionItemsSection" style="display: none;">
+                        <h3>Action Items</h3>
+                        <div id="actionItems"></div>
+                    </div>
+
+                    <div class="section" id="decisionsSection" style="display: none;">
+                        <h3>Decisions</h3>
+                        <div id="decisions"></div>
+                    </div>
+
+                    <div class="section" id="keyPointsSection" style="display: none;">
+                        <h3>Key Points</h3>
+                        <div id="keyPoints"></div>
+                    </div>
+
+                    <div class="section" id="sentimentsSection" style="display: none;">
+                        <h3>Speaker Sentiments</h3>
+                        <div id="sentiments"></div>
+                    </div>
+                </div>
             </div>
 
-            <div class="error" id="error"></div>
-
-            <div class="results" id="results">
-                <button class="download-btn" onclick="downloadMarkdown()">Download Markdown</button>
+            <!-- User Story Creator Agent -->
+            <div id="userStoryAgent" class="agent-content" style="display: none;">
+                <h2>User Story Creator Agent</h2>
+                <p>AI-powered user story creation for Jira with structured output</p>
                 
-                <div class="meta-info" id="metaInfo"></div>
+                <form id="userStoryForm">
+                    <div class="form-group">
+                        <label for="userStoryModelSelect">Select AI Model:</label>
+                        <select id="userStoryModelSelect" required>
+                            <option value="">Loading models...</option>
+                        </select>
+                    </div>
 
-                <div class="section">
-                    <h3>Summary</h3>
-                    <div class="summary-text" id="summaryText"></div>
+                    <div class="form-group">
+                        <label for="inputText">Input Text:</label>
+                        <textarea id="inputText" placeholder="Describe the feature or requirement you want to convert into a user story..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="projectContext">Project Context (Optional):</label>
+                        <textarea id="projectContext" placeholder="Provide additional context about your project, team, or domain..."></textarea>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn" id="userStorySubmitBtn">
+                            Create User Story
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="loadUserStorySampleBtn" onclick="loadRandomUserStorySample()">
+                            Load Sample
+                        </button>
+                    </div>
+                </form>
+
+                <div class="loading" id="userStoryLoading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Creating user story...</p>
+                    <p id="userStoryElapsedTime" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
                 </div>
 
-                <div class="section" id="actionItemsSection" style="display: none;">
-                    <h3>Action Items</h3>
-                    <div id="actionItems"></div>
-                </div>
+                <div class="error" id="userStoryError"></div>
 
-                <div class="section" id="decisionsSection" style="display: none;">
-                    <h3>Decisions</h3>
-                    <div id="decisions"></div>
-                </div>
+                <div class="results" id="userStoryResults" style="display: none;">
+                    <button class="download-btn" onclick="downloadUserStoryMarkdown()">Download Markdown</button>
+                    
+                    <div class="meta-info" id="userStoryMetaInfo"></div>
 
-                <div class="section" id="keyPointsSection" style="display: none;">
-                    <h3>Key Points</h3>
-                    <div id="keyPoints"></div>
-                </div>
+                    <div class="section">
+                        <h3>User Story</h3>
+                        <div class="user-story" id="userStoryContent"></div>
+                    </div>
 
-                <div class="section" id="sentimentsSection" style="display: none;">
-                    <h3>Speaker Sentiments</h3>
-                    <div id="sentiments"></div>
+                    <div class="section" id="acceptanceCriteriaSection" style="display: none;">
+                        <h3>Acceptance Criteria</h3>
+                        <div id="acceptanceCriteria"></div>
+                    </div>
+
+                    <div class="section" id="storyDetailsSection" style="display: none;">
+                        <h3>Story Details</h3>
+                        <div id="storyDetails"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="scripts/app.js"></script>
+    <script src="scripts/userStorySamples.js"></script>
 </body>
 </html> 

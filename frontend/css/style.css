@@ -38,8 +38,55 @@ body {
     opacity: 0.9;
 }
 
-.content {
+.agent-selector {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.agent-btn {
+    background: #e9ecef;
+    color: #495057;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.agent-btn:hover {
+    background: #dee2e6;
+    transform: translateY(-1px);
+}
+
+.agent-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.agent-content {
     padding: 40px;
+}
+
+.agent-content h2 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 1.8rem;
+}
+
+.agent-content p {
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+.content {
+    padding: 0;
 }
 
 .form-group {
@@ -202,6 +249,82 @@ textarea {
 .sentiment-positive { border-left-color: #28a745; }
 .sentiment-negative { border-left-color: #dc3545; }
 .sentiment-neutral { border-left-color: #6c757d; }
+
+.user-story {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    margin-bottom: 20px;
+}
+
+.user-story h4 {
+    color: #667eea;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.user-story .story-text {
+    font-style: italic;
+    color: #666;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.user-story .story-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.user-story .detail-item {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.user-story .detail-item strong {
+    color: #495057;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.acceptance-criteria {
+    background: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border-left: 4px solid #28a745;
+}
+
+.story-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.story-detail-item {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.story-detail-item strong {
+    display: block;
+    color: #495057;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.story-detail-item span {
+    color: #667eea;
+    font-weight: 600;
+}
 
 .download-btn {
     background: #28a745;

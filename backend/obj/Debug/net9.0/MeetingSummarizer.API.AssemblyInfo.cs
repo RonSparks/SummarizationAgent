@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MeetingSummarizer.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+78a809fbfa8851b80a29b809612e020d998a2469")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4121678e4fc51a6c79a2b02190ddaff274909287")]
 [assembly: System.Reflection.AssemblyProductAttribute("MeetingSummarizer.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MeetingSummarizer.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

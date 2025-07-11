@@ -38,6 +38,13 @@ builder.Services.AddHttpClient<IOllamaService, OllamaService>(client =>
     client.Timeout = TimeSpan.FromMinutes(10); // 10 minutes timeout for large models
 });
 
+// Add HTTP client for User Story service (shares the same Ollama instance)
+builder.Services.AddHttpClient<IUserStoryService, UserStoryService>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:11434/");
+    client.Timeout = TimeSpan.FromMinutes(10); // 10 minutes timeout for large models
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -45,6 +45,9 @@ builder.Services.AddHttpClient<IUserStoryService, UserStoryService>(client =>
     client.Timeout = TimeSpan.FromMinutes(10); // 10 minutes timeout for large models
 });
 
+// Configure the application to listen on all network interfaces
+builder.WebHost.UseUrls("http://0.0.0.0:5000", "https://0.0.0.0:5001");
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

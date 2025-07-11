@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  # Note: This is for reference only since you're using your existing Ollama instance
+  # You can comment this out or remove it entirely
+  ollama:
+    image: ollama/ollama:latest
+    container_name: meeting-summarizer-ollama
+    ports:
+      - "11435:11434"  # Changed to avoid conflict with your existing Ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    networks:
+      - summarizer-network
+
+volumes:
+  ollama_data:
+
+networks:
+  summarizer-network:
+    driver: bridge 

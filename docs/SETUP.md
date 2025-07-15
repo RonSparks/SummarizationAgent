@@ -1,4 +1,4 @@
-# Meeting Summarizer Agent Setup Guide
+# AI Agent Hub Setup Guide
 
 ## Prerequisites
 
@@ -8,44 +8,44 @@
 
 ## Quick Start
 
+### Option 1: Docker (Recommended)
+1. **Navigate to the docker directory:**
+   ```bash
+   cd docker
+   ```
+
+2. **Build and start the application:**
+   ```bash
+   docker-compose up --build
+   ```
+
+3. **Access the application:**
+   - Frontend: http://localhost:5010
+   - Backend API: http://localhost:5002
+   - Swagger UI: http://localhost:5002/swagger
+   - Ollama: http://localhost:11434 (your existing instance)
+
+### Option 2: Local Development
 1. **Clone and navigate to the project:**
    ```bash
    cd SummarizationAgent
    ```
 
-2. **Install frontend dependencies:**
-   ```bash
-   cd frontend
-   npm install
-   cd ..
-   ```
-
-3. **Ensure Ollama is running:**
+2. **Ensure Ollama is running:**
    ```bash
    # Check if Ollama is running on port 11434
    curl http://localhost:11434/api/tags
    ```
 
-4. **Run the startup script:**
+3. **Start the backend:**
    ```bash
-   ./start.ps1
-   ```
-
-   Or manually start each component:
-
-   ```bash
-   # Start backend (in one terminal)
    cd backend
    dotnet run
-   
-   # Start frontend (in another terminal)
-   cd frontend
-   npm start
    ```
 
-5. **Access the application:**
-   - Frontend: http://localhost:3002
+4. **Access the application:**
    - Backend API: http://localhost:5000
+   - Swagger UI: http://localhost:5000/swagger
    - Ollama: http://localhost:11434 (your existing instance)
 
 ## Using Your Existing Ollama Models
@@ -75,20 +75,34 @@ ollama pull codellama:7b
 
 ## Usage
 
-1. **Open the application** at http://localhost:3002
-2. **Select a model** from the dropdown (phi4:latest or deepseek-r1:14b)
-3. **Paste a meeting transcript** into the text area
-4. **Choose options** (include sentiment analysis)
-5. **Click "Generate Summary"** to process the transcript
-6. **Review results** including:
-   - Summary
-   - Action items
-   - Decisions
-   - Key points
-   - Speaker sentiments (if enabled)
-7. **Download the results** as markdown
+### Three AI Agents Available
 
-**Test Data**: Use the sample transcripts in `docs/test-transcripts.md` to test the application.
+1. **Meeting Summarizer Agent**
+   - Select a model from the dropdown
+   - Paste a meeting transcript
+   - Choose whether to include sentiment analysis
+   - Click "Generate Summary" or "Load Sample"
+   - Review structured output with action items, decisions, and key points
+   - Download results as markdown
+
+2. **User Story Creator Agent**
+   - Select a model from the dropdown
+   - Describe the feature or requirement
+   - Optionally provide project context
+   - Click "Create User Story" or "Load Sample"
+   - Review generated user story with acceptance criteria
+   - Download results as markdown
+
+3. **Email Classifier Agent**
+   - Select a model from the dropdown
+   - Paste email content to classify
+   - Choose whether to include tone analysis and metadata
+   - Click "Classify Email" or "Load Sample"
+   - Review color-coded classification with multiple categories
+   - See smart suggested actions based on category
+   - Download results as markdown
+
+**Test Data**: Use the "Load Sample" buttons for each agent to test with built-in sample data.
 
 ## Sample Transcript Format
 
@@ -144,21 +158,47 @@ Access Swagger UI at: http://localhost:5000/swagger
 
 ## Architecture
 
-- **Frontend**: React TypeScript with Tailwind CSS
-- **Backend**: .NET Core 8.0 Web API
-- **AI**: Ollama running in Docker container
+- **Frontend**: HTML/JavaScript with modern UI and agent switching
+- **Backend**: .NET Core 8.0 Web API with static file serving
+- **AI**: Ollama running locally or in Docker container
 - **Communication**: HTTP REST API between frontend and backend
 - **AI Communication**: HTTP API calls from backend to Ollama
+- **Docker**: Optional containerized deployment with nginx frontend
 
 ## Features
 
+### Meeting Summarizer Agent
 - ✅ Model selection from local Ollama instance
 - ✅ Raw transcript processing
 - ✅ Structured markdown summaries
-- ✅ Action item extraction
-- ✅ Decision tracking
-- ✅ Key points identification
-- ✅ Speaker sentiment analysis
+- ✅ Action item extraction with assignees and priorities
+- ✅ Decision tracking with decision makers
+- ✅ Key points identification by category
+- ✅ Speaker sentiment analysis with confidence scores
 - ✅ Download results as markdown
-- ✅ Modern, responsive UI
-- ✅ Error handling and validation 
+
+### User Story Creator Agent
+- ✅ Requirements to user story conversion
+- ✅ Jira-ready user story format
+- ✅ Acceptance criteria generation
+- ✅ Epic and story type suggestions
+- ✅ Priority and story point estimation
+- ✅ Label suggestions for categorization
+- ✅ Download results as markdown
+
+### Email Classifier Agent
+- ✅ Multi-category classification (8 categories)
+- ✅ Color-coded visual badges for categories
+- ✅ Multiple category support with "/" separation
+- ✅ Tone analysis (Professional, Casual, Formal, etc.)
+- ✅ Priority assessment (High, Medium, Low)
+- ✅ Smart suggested actions based on category
+- ✅ Enhanced SPAM detection
+- ✅ Download results as markdown
+
+### General Features
+- ✅ Agent switching with modern UI
+- ✅ Network accessibility
+- ✅ Built-in sample data for all agents
+- ✅ Real-time processing time tracking
+- ✅ Comprehensive error handling 

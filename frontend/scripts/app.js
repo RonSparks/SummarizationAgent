@@ -5,6 +5,7 @@ let currentUserStoryResult = null;
 window.addEventListener('DOMContentLoaded', async () => {
     await fetchModels();
     await fetchUserStoryModels();
+    await fetchEmailModels();
 });
 
 async function fetchModels() {
@@ -56,6 +57,32 @@ async function fetchUserStoryModels() {
         }
     } catch (error) {
         showUserStoryError('Failed to fetch available models. Make sure Ollama is running.');
+    }
+}
+
+async function fetchEmailModels() {
+    try {
+        const response = await fetch('/api/emailclassifier/models');
+        if (!response.ok) {
+            throw new Error('Failed to fetch email classifier models');
+        }
+        const models = await response.json();
+        
+        const select = document.getElementById('emailModelSelect');
+        select.innerHTML = '';
+        
+        if (models.length === 0) {
+            select.innerHTML = '<option value="">No models available</option>';
+        } else {
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        showEmailError('Failed to fetch available models. Make sure Ollama is running.');
     }
 }
 
@@ -160,6 +187,59 @@ document.getElementById('userStoryForm').addEventListener('submit', async (e) =>
     }
 });
 
+// Email Classifier form handler
+document.getElementById('emailForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const model = document.getElementById('emailModelSelect').value;
+    const emailContent = document.getElementById('emailContent').value.trim();
+    const includeToneAnalysis = document.getElementById('includeToneAnalysis').checked;
+    const includeMetadata = document.getElementById('includeMetadata').checked;
+
+    if (!model || !emailContent) {
+        showEmailError('Please select a model and enter email content.');
+        return;
+    }
+
+    setEmailLoading(true);
+    hideEmailError();
+    hideEmailResults();
+
+    // Record start time
+    const startTime = Date.now();
+
+    try {
+        const response = await fetch('/api/emailclassifier/classify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                emailBody: emailContent,
+                modelName: model,
+                includeToneAnalysis: includeToneAnalysis,
+                includeMetadata: includeMetadata
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.text();
+            throw new Error(errorData || 'Failed to classify email');
+        }
+
+        const result = await response.json();
+        const endTime = Date.now();
+        const elapsedTime = endTime - startTime;
+        
+        currentEmailResult = result;
+        displayEmailResults(result, elapsedTime);
+    } catch (error) {
+        showEmailError(error.message);
+    } finally {
+        setEmailLoading(false);
+    }
+});
+
 // Agent switching functionality
 function switchAgent(agentType) {
     // Update button states
@@ -172,9 +252,15 @@ function switchAgent(agentType) {
     if (agentType === 'summarizer') {
         document.getElementById('summarizerAgent').style.display = 'block';
         document.getElementById('userStoryAgent').style.display = 'none';
+        document.getElementById('emailAgent').style.display = 'none';
     } else if (agentType === 'userstory') {
         document.getElementById('summarizerAgent').style.display = 'none';
         document.getElementById('userStoryAgent').style.display = 'block';
+        document.getElementById('emailAgent').style.display = 'none';
+    } else if (agentType === 'email') {
+        document.getElementById('summarizerAgent').style.display = 'none';
+        document.getElementById('userStoryAgent').style.display = 'none';
+        document.getElementById('emailAgent').style.display = 'block';
     }
 }
 
@@ -273,6 +359,55 @@ function hideUserStoryError() {
 
 function hideUserStoryResults() {
     document.getElementById('userStoryResults').style.display = 'none';
+}
+
+// Email Classifier specific functions
+function setEmailLoading(loading) {
+    const loadingDiv = document.getElementById('emailLoading');
+    const submitBtn = document.getElementById('emailSubmitBtn');
+    const elapsedTimeDiv = document.getElementById('emailElapsedTime');
+    
+    if (loading) {
+        loadingDiv.style.display = 'block';
+        submitBtn.disabled = true;
+        
+        // Start elapsed time counter
+        const startTime = Date.now();
+        const timer = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            const timeString = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+            elapsedTimeDiv.textContent = `Elapsed time: ${timeString}`;
+        }, 1000);
+        
+        // Store timer reference for cleanup
+        loadingDiv.dataset.timer = timer;
+    } else {
+        loadingDiv.style.display = 'none';
+        submitBtn.disabled = false;
+        
+        // Clear timer
+        if (loadingDiv.dataset.timer) {
+            clearInterval(parseInt(loadingDiv.dataset.timer));
+            loadingDiv.dataset.timer = '';
+        }
+        elapsedTimeDiv.textContent = '';
+    }
+}
+
+function showEmailError(message) {
+    const errorDiv = document.getElementById('emailError');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function hideEmailError() {
+    document.getElementById('emailError').style.display = 'none';
+}
+
+function hideEmailResults() {
+    document.getElementById('emailResults').style.display = 'none';
 }
 
 function displayResults(result, elapsedTime) {
@@ -742,6 +877,186 @@ ${userStory.labels.map(label => `- ${label}`).join('\n')}` : ''}
     const a = document.createElement('a');
     a.href = url;
     a.download = `user-story-${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+} 
+
+// Email Classifier display and utility functions
+let currentEmailResult = null;
+
+function getCategoryColorClass(category) {
+    const colorMap = {
+        'urgent': 'urgent',
+        'fyi': 'fyi',
+        'action required': 'action-required',
+        'spam': 'spam',
+        'meeting': 'meeting',
+        'follow-up': 'follow-up',
+        'newsletter': 'newsletter',
+        'other': 'other'
+    };
+    return colorMap[category] || 'other';
+}
+
+function getSuggestedAction(category) {
+    const actionMap = {
+        'urgent': 'Respond immediately or escalate to management',
+        'fyi': 'Read and file for reference',
+        'action required': 'Take action or delegate to appropriate team member',
+        'spam': 'Delete this email and mark sender as spam',
+        'meeting': 'Add to calendar and respond with availability',
+        'follow-up': 'Review previous context and respond appropriately',
+        'newsletter': 'Read if interested, unsubscribe if unwanted',
+        'other': 'Review manually and categorize appropriately'
+    };
+    return actionMap[category.toLowerCase()] || 'Review manually';
+}
+
+function displayEmailResults(result, elapsedTime) {
+    const resultsDiv = document.getElementById('emailResults');
+    const metaInfoDiv = document.getElementById('emailMetaInfo');
+    const classificationDiv = document.getElementById('emailClassification');
+    const toneAnalysisSection = document.getElementById('toneAnalysisSection');
+    const metadataSection = document.getElementById('metadataSection');
+    
+    // Display meta information
+    metaInfoDiv.innerHTML = `
+        <div class="meta-item">
+            <strong>Model Used:</strong> ${result.modelUsed}
+        </div>
+        <div class="meta-item">
+            <strong>Processed At:</strong> ${new Date(result.processedAt).toLocaleString()}
+        </div>
+        <div class="meta-item processing-time">
+            <strong>Processing Time:</strong> ${elapsedTime}ms
+        </div>
+    `;
+    
+    // Parse multiple categories if separated by "/"
+    const categories = result.classification.label.split('/').map(cat => cat.trim()).filter(cat => cat.length > 0);
+    
+    // Display classification with color coding
+    const categoryBadges = categories.map(category => {
+        const categoryLower = category.toLowerCase();
+        const colorClass = getCategoryColorClass(categoryLower);
+        return `<span class="category-badge ${colorClass}">${category}</span>`;
+    }).join(' ');
+    
+    classificationDiv.innerHTML = `
+        <div class="classification-item">
+            <strong>Category:</strong> ${categoryBadges}
+        </div>
+        <div class="classification-item">
+            <strong>Confidence:</strong> ${Math.round(result.classification.confidence * 100)}%
+        </div>
+        <div class="classification-item">
+            <strong>Reasoning:</strong> ${result.classification.explanation}
+        </div>
+        <div class="classification-item">
+            <strong>Suggested Action:</strong> ${getSuggestedAction(categories[0] || result.classification.label)}
+        </div>
+    `;
+    
+    // Display tone analysis if available
+    if (result.classification.tone && result.classification.tone.trim() !== '') {
+        toneAnalysisSection.style.display = 'block';
+        document.getElementById('toneAnalysis').innerHTML = `
+            <div class="tone-item">
+                <strong>Overall Tone:</strong> <span class="tone-badge ${result.classification.tone.toLowerCase()}">${result.classification.tone}</span>
+            </div>
+            <div class="tone-item">
+                <strong>Priority:</strong> ${result.classification.priority}
+            </div>
+            <div class="tone-item">
+                <strong>Suggested Action:</strong> ${result.classification.suggestedAction}
+            </div>
+        `;
+    } else {
+        toneAnalysisSection.style.display = 'none';
+    }
+    
+    // Display metadata if available
+    if (result.metadata && Object.keys(result.metadata).length > 0) {
+        metadataSection.style.display = 'block';
+        const metadataHtml = Object.entries(result.metadata).map(([key, value]) => 
+            `<div class="metadata-item"><strong>${key}:</strong> ${value}</div>`
+        ).join('');
+        document.getElementById('metadata').innerHTML = metadataHtml;
+    } else {
+        metadataSection.style.display = 'none';
+    }
+    
+    resultsDiv.style.display = 'block';
+}
+
+function loadRandomEmailSample() {
+    const samples = [
+        {
+            title: "Urgent Client Request",
+            content: `Subject: URGENT - System Down\n\nHi Team,\n\nOur production system has been down for the past 2 hours and our clients are furious. This is a critical issue that needs immediate attention.\n\nThe error logs show a database connection timeout, but I'm not sure if that's the root cause. Can someone from the DevOps team please investigate ASAP?\n\nOur CEO is getting calls from angry customers and we're losing revenue every minute this is down.\n\nPlease respond immediately with an update.\n\nThanks,\nSarah\nCTO`
+        },
+        {
+            title: "Weekly Update",
+            content: `Subject: Weekly Team Update\n\nHi everyone,\n\nHope you're all having a great week! Here's a quick update on our progress:\n\n✅ Completed the new user authentication feature\n✅ Deployed the updated API to staging\n🔄 Currently working on the mobile app redesign\n📅 Planning meeting scheduled for Friday at 2 PM\n\nThe new authentication system is working great and we've received positive feedback from our beta users.\n\nLet me know if you have any questions or need help with anything.\n\nBest regards,\nMike\nTeam Lead`
+        },
+        {
+            title: "Meeting Invitation",
+            content: `Subject: Q4 Planning Meeting\n\nDear Team,\n\nI hope this email finds you well. I'm writing to invite you to our Q4 planning meeting scheduled for next Tuesday, October 15th, at 10:00 AM in the main conference room.\n\nAgenda:\n- Review Q3 achievements and challenges\n- Discuss Q4 goals and objectives\n- Budget planning and resource allocation\n- Open discussion and feedback\n\nPlease come prepared with your department's Q3 summary and Q4 proposals.\n\nIf you have any agenda items to add, please let me know by Friday.\n\nLooking forward to seeing everyone there!\n\nBest regards,\nJennifer\nCEO`
+        },
+        {
+            title: "Spam Email",
+            content: `Subject: CONGRATULATIONS! You've won $1,000,000!\n\nDear Valued Customer,\n\nCONGRATULATIONS! You have been selected as the winner of our exclusive $1,000,000 prize!\n\nTo claim your prize, please click the link below and provide your bank account details immediately:\n\n[CLICK HERE TO CLAIM YOUR PRIZE]\n\nThis offer expires in 24 hours, so act fast!\n\nDon't miss this once-in-a-lifetime opportunity!\n\nBest regards,\nPrize Committee`
+        }
+    ];
+
+    // Select a random sample
+    const randomIndex = Math.floor(Math.random() * samples.length);
+    const selectedSample = samples[randomIndex];
+
+    // Load the sample into the textarea
+    document.getElementById('emailContent').value = selectedSample.content;
+
+    // Show a brief notification
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 1000;
+        font-size: 14px;
+    `;
+    notification.textContent = `Loaded: ${selectedSample.title}`;
+    document.body.appendChild(notification);
+
+    // Remove notification after 3 seconds
+    setTimeout(() => {
+        document.body.removeChild(notification);
+    }, 3000);
+}
+
+function downloadEmailMarkdown() {
+    if (!currentEmailResult) return;
+
+    const processingTime = document.querySelector('#emailMetaInfo .processing-time')?.textContent || 'Unknown';
+    const includeToneAnalysis = document.getElementById('includeToneAnalysis').checked;
+    const includeMetadata = document.getElementById('includeMetadata').checked;
+    
+    const categories = currentEmailResult.classification.label.split('/').map(cat => cat.trim()).filter(cat => cat.length > 0);
+    const primaryCategory = categories[0] || currentEmailResult.classification.label;
+    
+    const markdown = `# Email Classification\n\n**Model Used:** ${currentEmailResult.modelUsed}\n**Processed At:** ${new Date(currentEmailResult.processedAt).toLocaleString()}\n**Processing Time:** ${processingTime}\n\n## Classification\n**Categories:** ${categories.join(', ')}\n**Primary Category:** ${primaryCategory}\n**Confidence:** ${Math.round(currentEmailResult.classification.confidence * 100)}%\n**Reasoning:** ${currentEmailResult.classification.explanation}\n**Suggested Action:** ${getSuggestedAction(primaryCategory)}\n\n${includeToneAnalysis && currentEmailResult.classification.tone ? `## Tone Analysis\n**Overall Tone:** ${currentEmailResult.classification.tone}\n**Priority:** ${currentEmailResult.classification.priority}` : ''}\n\n${includeMetadata && currentEmailResult.metadata && Object.keys(currentEmailResult.metadata).length > 0 ? `## Metadata\n${Object.entries(currentEmailResult.metadata).map(([key, value]) => `**${key}:** ${value}`).join('\\n')}` : ''}\n`;
+
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `email-classification-${new Date().toISOString().split('T')[0]}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

@@ -1,24 +1,51 @@
-version: '3.8'
+name: ai-agent-hub
 
 services:
-  # Note: This is for reference only since you're using your existing Ollama instance
-  # You can comment this out or remove it entirely
-  ollama:
-    image: ollama/ollama:latest
-    container_name: meeting-summarizer-ollama
+  # Backend API Service
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: ai-agent-hub-backend
     ports:
-      - "11435:11434"  # Changed to avoid conflict with your existing Ollama
-    volumes:
-      - ollama_data:/root/.ollama
+      - "5002:5000"
     environment:
-      - OLLAMA_HOST=0.0.0.0
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:5000
+      - OLLAMA_URL=http://host.docker.internal:11434/
     restart: unless-stopped
-    networks:
-      - summarizer-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
-volumes:
-  ollama_data:
+  # Frontend Service (Nginx)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: ai-agent-hub-frontend
+    ports:
+      - "5010:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  # Ollama Service (for reference - you can comment this out if using external Ollama)
+#   ollama:
+#     image: ollama/ollama:latest
+#     container_name: ai-agent-hub-ollama
+#     ports:
+#       - "11434:11434"
+#     volumes:
+#       - ollama_data:/root/.ollama
+#     environment:
+#       - OLLAMA_HOST=0.0.0.0
+#     networks:
+#       - ai-agent-network
+#     restart: unless-stopped
+
+# volumes:
+#   ollama_data:
 
 networks:
-  summarizer-network:
+  ai-agent-network:
     driver: bridge 

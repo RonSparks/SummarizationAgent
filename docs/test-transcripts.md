@@ -1,5 +1,7 @@
 # Test Transcripts for Meeting Summarizer Agent
 
+> **Note**: This is part of the AI Agent Hub, which includes three agents: Meeting Summarizer, User Story Creator, and Email Classifier. These transcripts are specifically for testing the Meeting Summarizer Agent.
+
 ## Sample 1: Weekly Team Meeting
 
 ```

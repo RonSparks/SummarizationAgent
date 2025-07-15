@@ -20,6 +20,9 @@
             <button type="button" class="agent-btn" onclick="switchAgent('userstory')">
                 User Story Creator
             </button>
+            <button type="button" class="agent-btn" onclick="switchAgent('email')">
+                Email Classifier
+            </button>
         </div>
 
         <div class="content">
@@ -155,6 +158,74 @@
                     <div class="section" id="storyDetailsSection" style="display: none;">
                         <h3>Story Details</h3>
                         <div id="storyDetails"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Classifier Agent -->
+            <div id="emailAgent" class="agent-content" style="display: none;">
+                <h2>Email Classifier Agent</h2>
+                <p>AI-powered email classification with tone analysis and metadata extraction</p>
+                
+                <form id="emailForm">
+                    <div class="form-group">
+                        <label for="emailModelSelect">Select AI Model:</label>
+                        <select id="emailModelSelect" required>
+                            <option value="">Loading models...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emailContent">Email Content:</label>
+                        <textarea id="emailContent" placeholder="Paste your email content here..." required></textarea>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="includeToneAnalysis" checked>
+                        <label for="includeToneAnalysis">Include tone analysis</label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="includeMetadata" checked>
+                        <label for="includeMetadata">Include metadata extraction</label>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="btn" id="emailSubmitBtn">
+                            Classify Email
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="loadEmailSampleBtn" onclick="loadRandomEmailSample()">
+                            Load Sample
+                        </button>
+                    </div>
+                </form>
+
+                <div class="loading" id="emailLoading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Classifying email...</p>
+                    <p id="emailElapsedTime" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
+                </div>
+
+                <div class="error" id="emailError"></div>
+
+                <div class="results" id="emailResults" style="display: none;">
+                    <button class="download-btn" onclick="downloadEmailMarkdown()">Download Markdown</button>
+                    
+                    <div class="meta-info" id="emailMetaInfo"></div>
+
+                    <div class="section">
+                        <h3>Classification</h3>
+                        <div class="classification" id="emailClassification"></div>
+                    </div>
+
+                    <div class="section" id="toneAnalysisSection" style="display: none;">
+                        <h3>Tone Analysis</h3>
+                        <div id="toneAnalysis"></div>
+                    </div>
+
+                    <div class="section" id="metadataSection" style="display: none;">
+                        <h3>Metadata</h3>
+                        <div id="metadata"></div>
                     </div>
                 </div>
             </div>

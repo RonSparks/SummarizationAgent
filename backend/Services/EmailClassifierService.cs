@@ -65,13 +65,13 @@ Please provide a JSON response with the following EXACT structure (do not modify
 }
 
 Classification Guidelines:
-- Urgent: Time-sensitive matters, deadlines, critical issues
-- FYI: Informational updates, announcements, general information
-- Action Required: Tasks, requests, items needing response or action
-- Spam: Unwanted emails, promotional content, suspicious messages
-- Meeting: Meeting invitations, scheduling, calendar events
-- Follow-up: Responses, updates on previous conversations
-- Newsletter: Regular updates, marketing content, subscriptions
+- Urgent: Time-sensitive matters, deadlines, critical issues, system outages, immediate attention required
+- FYI: Informational updates, announcements, general information, status updates
+- Action Required: Tasks, requests, items needing response or action, approvals needed
+- Spam: Unwanted emails, promotional content, suspicious messages, phishing attempts, unsolicited marketing
+- Meeting: Meeting invitations, scheduling, calendar events, conference calls
+- Follow-up: Responses, updates on previous conversations, check-ins
+- Newsletter: Regular updates, marketing content, subscriptions, company newsletters
 - Other: Miscellaneous emails that don't fit other categories
 
 CRITICAL: Your response must be ONLY valid JSON. No thinking text, no explanations, no markdown formatting. Just the JSON object.";

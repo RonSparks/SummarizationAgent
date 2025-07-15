@@ -248,6 +248,85 @@ textarea {
 
 .sentiment-positive { border-left-color: #28a745; }
 .sentiment-negative { border-left-color: #dc3545; }
+
+/* Email Classification Badges */
+.category-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 2px;
+    color: white;
+}
+
+.category-badge.urgent {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.category-badge.fyi {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
+}
+
+.category-badge.action-required {
+    background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);
+    box-shadow: 0 2px 4px rgba(253, 126, 20, 0.3);
+}
+
+.category-badge.spam {
+    background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%);
+    box-shadow: 0 2px 4px rgba(111, 66, 193, 0.3);
+}
+
+.category-badge.meeting {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.category-badge.follow-up {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+    color: #212529;
+}
+
+.category-badge.newsletter {
+    background: linear-gradient(135deg, #20c997 0%, #1a9f7a 100%);
+    box-shadow: 0 2px 4px rgba(32, 201, 151, 0.3);
+}
+
+.category-badge.other {
+    background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+    box-shadow: 0 2px 4px rgba(108, 117, 125, 0.3);
+}
+
+/* Email Classification specific styles */
+.classification-item {
+    background: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+    border-left: 4px solid #667eea;
+}
+
+.tone-item {
+    background: white;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border-left: 4px solid #17a2b8;
+}
+
+.metadata-item {
+    background: white;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border-left: 4px solid #6c757d;
+}
 .sentiment-neutral { border-left-color: #6c757d; }
 
 .user-story {

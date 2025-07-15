@@ -77,14 +77,15 @@ SummarizationAgent/
 - Download user stories as markdown files
 
 ### Email Classifier Agent
-- Email content classification (Urgent, FYI, Action Required, Spam, etc.)
-- Tone analysis (Professional, Casual, Formal, Aggressive, etc.)
-- Priority assessment (High, Medium, Low)
-- Suggested action recommendations
-- Confidence scoring with visual indicators
-- Optional metadata input (sender, subject, time)
-- Tag generation for categorization
-- Download classification results as markdown files
+- **Smart Email Classification**: Multi-category classification (Urgent, FYI, Action Required, Spam, Meeting, Follow-up, Newsletter, Other)
+- **Color-Coded Categories**: Visual badges with distinct colors for each category type
+- **Multiple Category Support**: Handles emails that fit multiple categories (e.g., "Urgent/Action Required")
+- **Tone Analysis**: Professional, Casual, Formal, Aggressive, Neutral, Informal analysis
+- **Priority Assessment**: High, Medium, Low priority with confidence scoring
+- **Smart Suggested Actions**: Context-aware recommendations (e.g., "Delete this email" for Spam)
+- **Enhanced SPAM Detection**: Improved detection of phishing attempts and unsolicited marketing
+- **Visual Indicators**: Color-coded badges with confidence scores and reasoning
+- **Download Results**: Export classification results as markdown files
 
 ### General Features
 - **Agent Switching**: Seamless switching between three agents
@@ -128,10 +129,11 @@ SummarizationAgent/
 ### Email Classifier
 1. Select an AI model from the dropdown
 2. Paste the email content you want to classify
-3. Optionally provide email metadata (sender, subject, time)
+3. Choose whether to include tone analysis and metadata extraction
 4. Click "Classify Email" or "Load Sample"
-5. Review the classification with tone analysis and priority assessment
-6. Download the classification results as a markdown file
+5. Review the color-coded classification with multiple categories, tone analysis, and priority assessment
+6. See the smart suggested action based on the primary category
+7. Download the classification results as a markdown file
 
 ## Sample Data
 
@@ -148,13 +150,13 @@ SummarizationAgent/
 - Real-time chat functionality
 
 ### Email Classifier Samples
-- Urgent client request
-- Newsletter subscription
-- Meeting invitation
-- Spam/phishing attempt
-- FYI announcement
-- Action required task
-- Follow-up reminder
+- **Urgent Client Request**: System outage with immediate attention required
+- **Weekly Update**: Informational team progress update
+- **Meeting Invitation**: Q4 planning meeting with agenda
+- **Spam/Phishing Attempt**: Suspicious prize notification with urgent action
+- **FYI Announcement**: General information updates
+- **Action Required Task**: Tasks needing response or approval
+- **Follow-up Reminder**: Responses and check-ins
 
 ## Configuration
 
@@ -204,12 +206,14 @@ Enable debug logging by setting `"logDebug": true` in `appsettings.json`.
 ## Recent Updates
 
 ### Email Classifier Agent (Latest)
-- Added new Email Classifier agent for email classification
-- Supports multiple classification categories (Urgent, FYI, Action Required, Spam, etc.)
-- Includes tone analysis and priority assessment
-- Features confidence scoring with visual indicators
-- Provides suggested actions and tagging
-- Includes sample email data for testing
+- **Enhanced Multi-Category Classification**: Supports 8 categories (Urgent, FYI, Action Required, Spam, Meeting, Follow-up, Newsletter, Other)
+- **Color-Coded Visual System**: Distinct color badges for each category (Red for Urgent, Purple for Spam, etc.)
+- **Multiple Category Support**: Handles emails that fit multiple categories with "/" separation
+- **Smart Suggested Actions**: Context-aware recommendations (e.g., "Delete this email" for Spam)
+- **Enhanced SPAM Detection**: Improved detection of phishing attempts and unsolicited marketing
+- **Tone Analysis & Priority Assessment**: Professional, Casual, Formal analysis with High/Medium/Low priority
+- **Visual Confidence Indicators**: Color-coded badges with confidence scores and reasoning
+- **Comprehensive Sample Data**: 4 different email types for testing (Urgent, Weekly Update, Meeting, Spam)
 
 ### Technical Improvements
 - Fixed agent switching functionality in JavaScript

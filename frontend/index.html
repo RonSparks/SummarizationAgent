@@ -11,6 +11,19 @@
         <div class="header">
             <h1>AI Agent Hub</h1>
             <p>Choose your AI agent for different tasks</p>
+            
+            <div class="ollama-config">
+                <div class="ollama-url-section">
+                    <label for="ollamaUrl">Ollama Instance:</label>
+                    <div class="url-input-group">
+                        <input type="text" id="ollamaUrl" placeholder="http://localhost:11434" value="http://localhost:11434">
+                        <button type="button" class="btn btn-secondary" id="updateOllamaBtn">Update</button>
+                        <button type="button" class="btn btn-secondary" id="resetOllamaBtn">Reset</button>
+                        <button type="button" class="btn btn-secondary" id="refreshModelsBtn">Refresh Models</button>
+                    </div>
+                    <div class="url-status" id="urlStatus"></div>
+                </div>
+            </div>
         </div>
 
         <div class="agent-selector">

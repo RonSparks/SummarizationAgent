@@ -31,6 +31,9 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Register Ollama URL service
+builder.Services.AddSingleton<IOllamaUrlService, OllamaUrlService>();
+
 // Add HTTP client for Ollama (generic service for all agents)
 builder.Services.AddHttpClient<IOllamaClient, OllamaClient>(client =>
 {

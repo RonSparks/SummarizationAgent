@@ -1,18 +1,49 @@
 let currentResult = null;
 let currentUserStoryResult = null;
 
+// Debug: Check if script is loading
+console.log('AI Agent Hub JavaScript loaded successfully');
+
 // Fetch available models on page load
 window.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM loaded, initializing application...');
+    
+    // Set up event listeners for Ollama URL management buttons
+    setupOllamaUrlEventListeners();
+    
+    await loadCurrentOllamaUrl();
     await fetchModels();
     await fetchUserStoryModels();
     await fetchEmailModels();
+    console.log('Application initialization complete');
 });
+
+function setupOllamaUrlEventListeners() {
+    // Add event listeners for Ollama URL management buttons
+    const updateBtn = document.getElementById('updateOllamaBtn');
+    const resetBtn = document.getElementById('resetOllamaBtn');
+    const refreshBtn = document.getElementById('refreshModelsBtn');
+    
+    if (updateBtn) {
+        updateBtn.addEventListener('click', updateOllamaUrl);
+    }
+    
+    if (resetBtn) {
+        resetBtn.addEventListener('click', resetOllamaUrl);
+    }
+    
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshAllModels);
+    }
+    
+    console.log('Ollama URL event listeners set up');
+}
 
 async function fetchModels() {
     try {
         const response = await fetch('/api/summarization/models');
         if (!response.ok) {
-            throw new Error('Failed to fetch models');
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const models = await response.json();
         
@@ -29,8 +60,12 @@ async function fetchModels() {
                 select.appendChild(option);
             });
         }
+        
+        console.log(`Loaded ${models.length} models for summarization agent`);
     } catch (error) {
-        showError('Failed to fetch available models. Make sure Ollama is running.');
+        console.error('Error fetching summarization models:', error);
+        showError('Failed to fetch available models. Make sure Ollama is running and accessible.');
+        throw error; // Re-throw so refreshAllModels can handle it
     }
 }
 
@@ -38,7 +73,7 @@ async function fetchUserStoryModels() {
     try {
         const response = await fetch('/api/userstory/models');
         if (!response.ok) {
-            throw new Error('Failed to fetch user story models');
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const models = await response.json();
         
@@ -55,8 +90,12 @@ async function fetchUserStoryModels() {
                 select.appendChild(option);
             });
         }
+        
+        console.log(`Loaded ${models.length} models for user story agent`);
     } catch (error) {
-        showUserStoryError('Failed to fetch available models. Make sure Ollama is running.');
+        console.error('Error fetching user story models:', error);
+        showUserStoryError('Failed to fetch available models. Make sure Ollama is running and accessible.');
+        throw error; // Re-throw so refreshAllModels can handle it
     }
 }
 
@@ -64,7 +103,7 @@ async function fetchEmailModels() {
     try {
         const response = await fetch('/api/emailclassifier/models');
         if (!response.ok) {
-            throw new Error('Failed to fetch email classifier models');
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const models = await response.json();
         
@@ -81,8 +120,12 @@ async function fetchEmailModels() {
                 select.appendChild(option);
             });
         }
+        
+        console.log(`Loaded ${models.length} models for email classifier agent`);
     } catch (error) {
-        showEmailError('Failed to fetch available models. Make sure Ollama is running.');
+        console.error('Error fetching email classifier models:', error);
+        showEmailError('Failed to fetch available models. Make sure Ollama is running and accessible.');
+        throw error; // Re-throw so refreshAllModels can handle it
     }
 }
 
@@ -1061,4 +1104,150 @@ function downloadEmailMarkdown() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-} 
+}
+
+// Ollama URL Management Functions
+async function loadCurrentOllamaUrl() {
+    try {
+        const response = await fetch('/api/ollama/url');
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('ollamaUrl').value = data.currentUrl.replace(/\/$/, '');
+            updateUrlStatus('Current Ollama URL loaded', 'success');
+        } else {
+            updateUrlStatus('Failed to load current URL', 'error');
+        }
+    } catch (error) {
+        updateUrlStatus('Error loading URL: ' + error.message, 'error');
+    }
+}
+
+async function updateOllamaUrl() {
+    const urlInput = document.getElementById('ollamaUrl');
+    const url = urlInput.value.trim();
+    
+    if (!url) {
+        updateUrlStatus('Please enter a valid URL', 'error');
+        return;
+    }
+    
+    // Add protocol if missing
+    let fullUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        fullUrl = 'http://' + url;
+    }
+    
+    try {
+        updateUrlStatus('Updating Ollama URL...', '');
+        
+        const response = await fetch('/api/ollama/url', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url: fullUrl })
+        });
+        
+        if (response.ok) {
+            updateUrlStatus('Ollama URL updated successfully! Refreshing models...', 'success');
+            
+            // Refresh models after URL update with better error handling
+            try {
+                await refreshAllModels();
+                updateUrlStatus('Models refreshed with new Ollama instance', 'success');
+            } catch (error) {
+                updateUrlStatus('URL updated but failed to refresh models: ' + error.message, 'error');
+            }
+        } else {
+            const errorData = await response.text();
+            updateUrlStatus('Failed to update URL: ' + errorData, 'error');
+        }
+    } catch (error) {
+        updateUrlStatus('Error updating URL: ' + error.message, 'error');
+    }
+}
+
+async function resetOllamaUrl() {
+    try {
+        updateUrlStatus('Resetting to default URL...', '');
+        
+        const response = await fetch('/api/ollama/url/reset', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            updateUrlStatus('Reset to default URL! Refreshing models...', 'success');
+            
+            // Reload current URL and refresh models with better error handling
+            try {
+                await loadCurrentOllamaUrl();
+                await refreshAllModels();
+                updateUrlStatus('Models refreshed with default Ollama instance', 'success');
+            } catch (error) {
+                updateUrlStatus('URL reset but failed to refresh models: ' + error.message, 'error');
+            }
+        } else {
+            const errorData = await response.text();
+            updateUrlStatus('Failed to reset URL: ' + errorData, 'error');
+        }
+    } catch (error) {
+        updateUrlStatus('Error resetting URL: ' + error.message, 'error');
+    }
+}
+
+async function refreshAllModels() {
+    updateUrlStatus('Refreshing models from new Ollama instance...', '');
+    
+    console.log('Starting model refresh for all agents...');
+    
+    const results = await Promise.allSettled([
+        fetchModels(),
+        fetchUserStoryModels(),
+        fetchEmailModels()
+    ]);
+    
+    // Log results for debugging
+    results.forEach((result, index) => {
+        const agentNames = ['Summarization', 'User Story', 'Email Classifier'];
+        if (result.status === 'fulfilled') {
+            console.log(`${agentNames[index]} models refreshed successfully`);
+        } else {
+            console.error(`${agentNames[index]} models failed to refresh:`, result.reason);
+        }
+    });
+    
+    // Check if any of the model fetches failed
+    const failedResults = results.filter(result => result.status === 'rejected');
+    
+    if (failedResults.length > 0) {
+        const errorMessages = failedResults.map(result => result.reason?.message || 'Unknown error').join(', ');
+        throw new Error(`Failed to refresh some models: ${errorMessages}`);
+    }
+    
+    // Clear any previous error states
+    hideError();
+    hideUserStoryError();
+    hideEmailError();
+    
+    console.log('All models refreshed successfully!');
+    updateUrlStatus('All models refreshed successfully!', 'success');
+}
+
+function updateUrlStatus(message, type) {
+    const statusElement = document.getElementById('urlStatus');
+    statusElement.textContent = message;
+    statusElement.className = 'url-status ' + type;
+    
+    // Clear status after 5 seconds
+    if (type === 'success' || type === 'error') {
+        setTimeout(() => {
+            statusElement.textContent = '';
+            statusElement.className = 'url-status';
+        }, 5000);
+    }
+}
+
+console.log('All Ollama URL management functions loaded successfully'); 

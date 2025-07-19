@@ -12,7 +12,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://0.0.0.0:5000
-      - OLLAMA_URL=http://host.docker.internal:11434/
+      - OLLAMA_URL=http://host.docker.internal:11435/
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"

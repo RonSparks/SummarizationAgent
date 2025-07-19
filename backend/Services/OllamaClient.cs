@@ -9,19 +9,27 @@ public class OllamaClient : IOllamaClient
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<OllamaClient> _logger;
+    private readonly IOllamaUrlService _ollamaUrlService;
 
-    public OllamaClient(HttpClient httpClient, ILogger<OllamaClient> logger)
+    public OllamaClient(HttpClient httpClient, ILogger<OllamaClient> logger, IOllamaUrlService ollamaUrlService)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _ollamaUrlService = ollamaUrlService;
     }
 
     public async Task<List<string>> GetAvailableModelsAsync()
     {
         try
         {
-            _logger.LogInformation("Fetching models from Ollama...");
-            var response = await _httpClient.GetAsync("api/tags");
+            var ollamaUrl = _ollamaUrlService.GetCurrentOllamaUrl();
+            _logger.LogInformation($"Fetching models from Ollama at: {ollamaUrl}");
+            
+            using var client = new HttpClient();
+            client.BaseAddress = new Uri(ollamaUrl);
+            client.Timeout = TimeSpan.FromMinutes(2);
+            
+            var response = await client.GetAsync("api/tags");
             _logger.LogInformation($"Ollama response status: {response.StatusCode}");
             
             if (response.IsSuccessStatusCode)
@@ -59,6 +67,9 @@ public class OllamaClient : IOllamaClient
 
     public async Task<string> GenerateResponseAsync(string model, string prompt)
     {
+        var ollamaUrl = _ollamaUrlService.GetCurrentOllamaUrl();
+        _logger.LogInformation($"Generating response from Ollama at: {ollamaUrl}");
+        
         var ollamaRequest = new OllamaGenerateRequest
         {
             Model = model,
@@ -69,7 +80,11 @@ public class OllamaClient : IOllamaClient
         var json = JsonSerializer.Serialize(ollamaRequest);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync("api/generate", content);
+        using var client = new HttpClient();
+        client.BaseAddress = new Uri(ollamaUrl);
+        client.Timeout = TimeSpan.FromMinutes(10);
+        
+        var response = await client.PostAsync("api/generate", content);
         
         if (response.IsSuccessStatusCode)
         {
